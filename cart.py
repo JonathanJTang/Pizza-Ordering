@@ -12,7 +12,7 @@ class Cart:
     def __init__(self) -> None:
         """Initialize a new empty Cart."""
         self.products = {}
-        self.next_id = 1  # This always increments
+        self.next_id = 1  # This always increments, regardless of removed items
 
     def valid_cart_item_id(self, cart_item_id) -> bool:
         return cart_item_id in self.products.keys()
