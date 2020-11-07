@@ -1,7 +1,7 @@
 import click
 import requests
 
-BASE_URL = "http://127.0.0.1:5000/api"
+BASE_URL = "http://127.0.0.1:5000"
 TOPPINGS_OPTIONS = ("Olives",
                     "Tomatoes",
                     "Mushrooms",
@@ -54,11 +54,12 @@ def drink(drink_type):
     print("drink_type={}, type={}".format(drink_type, type(drink_type)))
 
 
-@click.command()
+@main.command()
 def test():
     # # click.clear()  # Run clear in terminal
     # click.prompt("Please enter a valid integer", type=click.IntRange(min=1))
-    response = requests.get(BASE_URL + "/api/orders/create")
+    response = requests.get(BASE_URL + "/pizza")
+    # response = requests.get(BASE_URL + "/api/orders/create")
     # response = requests.post('https://httpbin.org/post', data = {'key':'value'})
     print(response.status_code)
     print(response.text)
