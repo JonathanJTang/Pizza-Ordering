@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Dict
+from typing import Dict, List, Union
 
 from invalid_option_error import InvalidOptionError
 
@@ -19,16 +19,21 @@ class Product:
         self.set_type(type_)
 
     def set_type(self, type_: str) -> None:
-        """ Set the type of this product as 'type_'. Raise
+        """Set the type of this product as 'type_' (not case sensitive). Raise
         InvalidOptionError if 'type_' is not a valid type option."""
         if type_.upper() not in self.type_to_price:
             raise InvalidOptionError(type_, option_type="type")
         self.type_ = type_.upper()  # use uppercase keys in these dictionaries
 
     def get_type(self) -> str:
-        """ Returns the product type as a string."""
+        """Returns the product type as a string."""
         return self.type_
 
     def get_price(self) -> Decimal:
         """Return the price of this product. This is an abstract method."""
+        raise NotImplementedError()
+
+    def edit(self, changes: Dict[str, Union[str, List[str]]]) -> None:
+        """Edit this product with the changes specified in changes. This is an
+        abstract method."""
         raise NotImplementedError()

@@ -1,12 +1,12 @@
 from decimal import Decimal
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from invalid_option_error import InvalidOptionError
 from product import Product
 
 
 class Pizza(Product):
-    """ A Pizza with size, type and toppings.
+    """A Pizza with size, type and toppings.
     size      : The size of the Pizza.
     toppings  : A list of this Pizza's additional toppings (in addition to the
                 toppings that come with the pizza type)
@@ -29,15 +29,16 @@ class Pizza(Product):
         self.set_toppings(toppings)
 
     def set_size(self, size: str) -> None:
-        """ Set the size of this Pizza object as 'size'. Raise
-        InvalidOptionError if 'size' is not a valid size option."""
+        """Set the size of this Pizza object as 'size' (not case sensitive).
+        Raise InvalidOptionError if 'size' is not a valid size option."""
         if size.upper() not in self.size_to_price:
             raise InvalidOptionError(size, option_type="size")
         self.size = size.upper()  # use uppercase keys in these dictionaries
 
     def add_topping(self, topping: str) -> None:
-        """Add 'topping' as an additional option for this Pizza. Raise
-        InvalidOptionError if 'topping' is not a valid topping option."""
+        """Add 'topping' as an additional option for this Pizza (not case
+        sensitive). Raise InvalidOptionError if 'topping' is not a valid
+        topping option."""
         if topping.upper() not in self.topping_to_price:
             raise InvalidOptionError(topping, option_type="topping")
         self.toppings.append(topping.upper())  # use uppercase keys
@@ -53,7 +54,7 @@ class Pizza(Product):
             self.toppings.remove(topping_formatted)
 
     def set_toppings(self, toppings: List[str]):
-        """ Set the additional toppings of this Pizza object as 'toppings'.
+        """Set the additional toppings of this Pizza object as 'toppings'.
         Raise InvalidOptionError if any element of 'toppings' is not a valid
         topping option."""
         self.toppings = []  # Clear any previous choices
@@ -61,23 +62,42 @@ class Pizza(Product):
             self.add_topping(topping)
 
     def get_size(self) -> str:
-        """ Returns the pizza size as string."""
+        """Return the pizza size as string."""
         return self.size
 
     def get_toppings(self) -> List[str]:
-        """ Returns the list of additional pizza toppings as strings."""
+        """Return the list of additional pizza toppings as strings."""
         topping_strings = []
         for topping in self.toppings:
             topping_strings.append(topping)
         return topping_strings
 
     def get_price(self) -> Decimal:
-        """ Returns the price of this Pizza."""
+        """Return the price of this Pizza."""
         toppings_total = Decimal("0.00")
         for topping in self.toppings:
             toppings_total += self.topping_to_price[topping]
         return self.size_to_price[self.size] \
-            + self.type_to_price[self.type_] + toppings_total
+               + self.type_to_price[self.type_] + toppings_total
+
+    def edit(self, changes: Dict[str, Union[str, List[str]]]) -> None:
+        """Edit this Pizza with the changes specified in changes. If any of
+        the changes are invalid, raise the appropriate error."""
+        # Check for invalid variable types in this function; the corresponding
+        # setters check whether their values are valid
+        for option in changes:
+            if not isinstance(option, str):
+                raise InvalidOptionError(option, option_type="Pizza edit")
+            if option.lower() == "type" and isinstance(changes[option], str):
+                self.set_type(changes[option])
+            elif option.lower() == "size" and isinstance(changes[option], str):
+                self.set_size(changes[option])
+            elif option.lower() == "toppings" \
+                    and isinstance(changes[option], list) \
+                    and all(isinstance(name, str) for name in changes[option]):
+                self.set_toppings(changes[option])
+            else:
+                raise InvalidOptionError(option, option_type="Pizza edit")
 
 
 # if __name__ == "__main__":

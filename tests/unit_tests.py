@@ -2,6 +2,7 @@ import unittest
 from decimal import Decimal
 
 from drink import Drink
+from cart import Cart
 from invalid_option_error import InvalidOptionError
 from pizza import Pizza
 from PizzaParlour import app
@@ -36,6 +37,9 @@ class TestProduct(unittest.TestCase):
     def test_get_price(self):
         self.assertRaises(NotImplementedError, self.product.get_price)
 
+    def test_edit(self):
+        self.assertRaises(NotImplementedError, self.product.edit, {})
+
 
 class TestDrink(unittest.TestCase):
     def setUp(self):
@@ -45,6 +49,15 @@ class TestDrink(unittest.TestCase):
 
     def test_getprice(self):
         self.assertEqual(self.drink.get_price(), Decimal("3.01"))
+
+    def test_edit_type(self):
+        self.drink.edit({"type": "coke"})
+        self.assertEqual(self.drink.get_type(), "COKE")
+
+    def test_edit_invalid_options(self):
+        self.assertRaises(InvalidOptionError, self.drink.edit, {1: "bla"})
+        self.assertRaises(InvalidOptionError, self.drink.edit, {"type": 0})
+        self.assertRaises(InvalidOptionError, self.drink.edit, {"type": "none"})
 
 
 class TestPizza(unittest.TestCase):
@@ -104,7 +117,7 @@ class TestPizza(unittest.TestCase):
 
     def test_remove_invalid_topping(self):
         self.assertRaisesRegex(InvalidOptionError,
-                               "'Blabla' is not a valid Pizza topping option",
+                               "'Blabla' is not a valid topping option",
                                self.pizza.remove_topping,
                                "Blabla")
         self.assertEqual(len(self.pizza.toppings), self.prev_toppings_len)
@@ -112,3 +125,74 @@ class TestPizza(unittest.TestCase):
     def test_get_price(self):
         self.assertEqual(self.pizza.get_price(), Decimal("9.99"))
 
+    def test_edit_size(self):
+        self.pizza.edit({"size": "Medium"})
+        self.assertEqual(self.pizza.get_size(), "MEDIUM")
+
+    def test_edit_type(self):
+        self.pizza.edit({"type": "Pepperoni"})
+        self.assertEqual(self.pizza.get_type(), "PEPPERONI")
+
+    def test_edit_topping(self):
+        self.pizza.edit({"toppings": ["Beef", "Chicken", "Olive"]})
+        self.assertEqual(self.pizza.get_toppings(), ["BEEF", "CHICKEN", "OLIVE"])
+
+    def test_edit_invalid_options(self):
+        self.assertRaises(InvalidOptionError, self.pizza.edit, {1: "bla"})
+        self.assertRaises(InvalidOptionError, self.pizza.edit, {"size": 1})
+        self.assertRaises(InvalidOptionError, self.pizza.edit, {"type": 0})
+        self.assertRaises(InvalidOptionError, self.pizza.edit, {"type": "mini"})
+        self.assertRaises(InvalidOptionError, self.pizza.edit, {"toppings": "str"})
+        self.assertRaises(InvalidOptionError, self.pizza.edit, {"toppings": ["str", 1]})
+        self.assertEqual(self.pizza.get_size(), "SMALL")
+        self.assertEqual(self.pizza.get_type(), "CUSTOM")
+        self.assertEqual(self.pizza.get_toppings(), ["BEEF", "CHICKEN"])
+
+
+class TestCart(unittest.TestCase):
+    def setUp(self):
+        Drink.set_type_to_price({"COKE": Decimal("2.00"),
+                                 "JUICE": Decimal("3.01")})
+        self.cart = Cart()
+
+    def test_initial_empty_cart(self):
+        self.assertEqual(self.cart.products, {})
+        self.assertEqual(self.cart.next_id, 1)
+
+    def test_add_one_product(self):
+        cart_item_id = self.cart.add_product(Drink("Juice"))
+        self.assertEqual(self.cart.products[cart_item_id].get_type(), "JUICE")
+        self.assertEqual(self.cart.next_id, 2)
+
+    def test_valid_cart_item_id(self):
+        self.assertFalse(self.cart.valid_cart_item_id(1))
+        self.cart.add_product(Drink("Juice"))
+        self.assertTrue(self.cart.valid_cart_item_id(1))
+        self.cart.add_product(Drink("Coke"))
+        self.assertFalse(self.cart.valid_cart_item_id(0))
+        self.assertTrue(self.cart.valid_cart_item_id(1))
+        self.assertTrue(self.cart.valid_cart_item_id(2))
+        self.assertFalse(self.cart.valid_cart_item_id(3))
+        
+    def test_add_and_remove_product(self):
+        cart_item_id = self.cart.add_product(Drink("Juice"))
+        self.cart.remove_product(cart_item_id)
+        self.assertEqual(self.cart.products, {})
+        self.assertEqual(self.cart.next_id, 2)  # id's keep incrementing
+
+    def test_edit_product(self):
+        self.cart.add_product(Drink("Juice"))
+        self.cart.edit_product(1, {"type": "Coke"})
+        self.assertEqual(self.cart.products[1].get_type(), "COKE")
+
+    def test_get_total_price(self):
+        self.cart.add_product(Drink("Juice"))
+        self.cart.add_product(Drink("Coke"))
+        self.assertEqual(self.cart.get_total_price(), Decimal("5.01"))
+
+    def test_get_products(self):
+        self.cart.add_product(Drink("Juice"))
+        self.cart.add_product(Drink("Coke"))
+        products = self.cart.get_products()
+        self.assertEqual(products[0].get_type(), "JUICE")
+        self.assertEqual(products[1].get_type(), "COKE")
