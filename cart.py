@@ -1,5 +1,6 @@
-from typing import Dict, List, Union
 from decimal import Decimal
+from typing import Dict, List, Union
+
 from product import Product
 
 

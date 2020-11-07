@@ -1,8 +1,8 @@
 from decimal import Decimal
-from product import Product
 from typing import Dict, List, Union
 
 from invalid_option_error import InvalidOptionError
+from product import Product
 
 
 class Drink(Product):
