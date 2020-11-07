@@ -1,6 +1,7 @@
 from enum import Enum
 from decimal import Decimal, getcontext
 from typing import List
+from abstract_product import AbstractProduct
 
 # class AbstractOptionsEnum(Enum):
 #     @classmethod
@@ -19,7 +20,7 @@ from typing import List
 
 
 class InvalidOptionError(Exception):
-    """"""
+    """ Exception that is raised when an invalid product option was given."""
     def __init__(self, option: str, option_type: str) -> None:
         self.option = option
         self.option_type = option_type
@@ -28,7 +29,7 @@ class InvalidOptionError(Exception):
         return f"'{self.option}' is not a valid Pizza {self.option_type} option"
 
 
-class Pizza:
+class Pizza(AbstractProduct):
     """ A Pizza with size, type and toppings.
     size      : The size of the Pizza.
     pizza_type: The type of the Pizza.

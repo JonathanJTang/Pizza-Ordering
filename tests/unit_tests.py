@@ -1,5 +1,6 @@
 from PizzaParlour import app
 from pizza import Pizza, InvalidOptionError
+from abstract_product import AbstractProduct
 from decimal import Decimal
 import unittest
 
@@ -8,6 +9,11 @@ def test_pizza():
 
     assert response.status_code == 200
     assert response.data == b'Welcome to Pizza Planet!'
+
+
+class TestAbstractProduct(unittest.TestCase):
+    def test_get_price(self):
+        self.assertRaises(NotImplementedError, AbstractProduct().get_price)
 
 
 class TestPizza(unittest.TestCase):
