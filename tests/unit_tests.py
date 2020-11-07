@@ -56,7 +56,7 @@ class TestPizza(unittest.TestCase):
 
     def test_remove_invalid_topping(self):
         self.assertRaisesRegex(InvalidOptionError, \
-                               "Blabla is not a valid Pizza topping option", \
+                               "'Blabla' is not a valid Pizza topping option", \
                                self.pizza.remove_topping, \
                                "Blabla")
         self.assertEqual(len(self.pizza.toppings), self.prev_toppings_len)

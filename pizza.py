@@ -25,7 +25,7 @@ class InvalidOptionError(Exception):
         self.option_type = option_type
 
     def __str__(self) -> str:
-        return f"{self.option} is not a valid Pizza {self.option_type} option"
+        return f"'{self.option}' is not a valid Pizza {self.option_type} option"
 
 
 class Pizza:
