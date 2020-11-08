@@ -3,10 +3,15 @@ from decimal import Decimal
 
 from cart import Cart
 from drink import Drink
+from foodora_delivery import FoodoraDelivery
 from invalid_option_error import InvalidOptionError
+from order import Order
+from pickup import Pickup
 from pizza import Pizza
 from PizzaParlour import app
+from pizzeria_delivery import PizzeriaDelivery
 from product import Product
+from uber_eats_delivery import UberEatsDelivery
 
 
 def test_pizza():
@@ -196,3 +201,46 @@ class TestCart(unittest.TestCase):
         products = self.cart.get_products()
         self.assertEqual(products[0].get_type(), "JUICE")
         self.assertEqual(products[1].get_type(), "COKE")
+
+
+class TestOrder(unittest.TestCase):
+    def setUp(self):
+        Drink.set_type_to_price({"COKE": Decimal("2.00"),
+                                 "JUICE": Decimal("3.01")})
+        self.cart = Cart()
+        self.cart.add_product(Drink("Juice"))
+        self.cart.add_product(Drink("Coke"))
+        self.order = Order(0, self.cart)
+
+    def test_initialize_order(self):
+        self.assertEqual(self.order.order_no, 0)
+        self.assertIsInstance(self.order.delivery_method, Pickup)
+        self.assertEqual(self.order.cart.get_products()[0].get_type(), "JUICE")
+        self.assertEqual(self.order.cart.get_products()[1].get_type(), "COKE")
+        self.assertEqual(len(self.order.cart.get_products()), 2)
+
+    def test_get_order_no(self):
+        self.assertEqual(self.order.get_order_no(), 0)
+
+    def test_get_cart(self):
+        self.assertEqual(self.order.get_cart().get_products()[0].get_type(), "JUICE")
+        self.assertEqual(self.order.get_cart().get_products()[1].get_type(), "COKE")
+
+    def test_get_delivery_method(self):
+        self.assertIsInstance(self.order.get_delivery_method(), Pickup)
+
+    def test_set_cart(self):
+        new_cart = Cart()
+        new_cart.add_product(Drink("Coke"))
+        self.order.set_cart(new_cart)
+        self.assertEqual(self.order.get_cart().get_products()[0].get_type(), "COKE")
+        self.assertEqual(len(self.order.get_cart().get_products()), 1)
+
+    def test_set_delivery_method(self):
+        new_delivery_method = Pickup()
+        self.order.set_delivery_method(new_delivery_method)
+        self.assertIsInstance(self.order.get_delivery_method(), Pickup)
+
+    def test_checkout(self):
+        self.assertEqual(self.order.checkout(), Decimal("5.01"))
+

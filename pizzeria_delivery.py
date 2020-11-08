@@ -14,4 +14,7 @@ class PizzeriaDelivery(DeliveryMethod):
     def set_address(self, address: str) -> None:
         """Set the address of pizzeria delivery."""
         self.address = address
-        
+
+    def deliver(self) -> None:
+        """Inform customer that their delivery is on its way."""
+        return "Your delivery is on its way!"
