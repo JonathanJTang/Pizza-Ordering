@@ -1,9 +1,14 @@
 from flask import Flask, jsonify, request
+from requests.api import options
 from jsonschema import ValidationError, validate
 
 import data_formats
 from cart import Cart
 from order import Order
+from json_parser import JsonParser
+from drink import Drink
+from pizza import Pizza
+import options
 
 app = Flask("Assignment 2")
 
@@ -44,8 +49,9 @@ def create_order():
         if order_data["data_format"] == "json_tree":
             validate(order_data, data_formats.order_schema_json_tree)
             print("JSON validation success")
-            # TODO: use JSON parser to resolve products in
-            # order_data["products"] to the cart
+            parser = JsonParser()
+            for product in parser.get_product_list(order_data):
+                new_cart.add_product(product)
         elif order_data["data_format"] == "csv":
             validate(order_data, data_formats.order_schema_csv)
             # TODO: use CSV parser to add the products in
@@ -70,4 +76,8 @@ def edit_order(order_id):
 
 
 if __name__ == "__main__":
+    Drink.set_type_to_price(options.DRINK_TYPE_TO_PRICE)
+    Pizza.set_type_to_price(options.PIZZA_TYPE_TO_PRICE)
+    Pizza.set_size_to_price(options.PIZZA_SIZE_TO_PRICE)
+    Pizza.set_topping_to_price(options.PIZZA_TOPPING_TO_PRICE)
     app.run()

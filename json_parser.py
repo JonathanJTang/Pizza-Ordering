@@ -9,18 +9,10 @@ from drink import Drink
 class JsonParser(OrderParser):
     """A class to parse JSON object into internal data structures."""
 
-    def __init__(self, json: Dict[str, Any]):
-        """Initialize a JSON parser. """
-        self.set_json(json)
-
-    def set_json(self, json):
-        """Set this JSON parsers JSON to json"""
-        self.json = json
-
-    def get_product_list(self) -> List[Product]:
+    def get_product_list(self, json) -> List[Product]:
         """Return the list of products in this order."""
         list_products = []
-        product_dictionaries_list = self.json["products"]
+        product_dictionaries_list = json["products"]
         for product in product_dictionaries_list:
             if product["product_category"] == "pizza":
                 pizza = Pizza(product["size"], product["toppings"], product["type"])
@@ -30,6 +22,23 @@ class JsonParser(OrderParser):
                 list_products.append(drink)
         return list_products
 
+    def get_json(self, product_list: List[Product]) -> Dict[str, Any]:
+        """Return a dictionary to be jsonified from product list."""
+        json = {"products": []}
+        for product in product_list:
+            product_dictionary = {}
+            if isinstance(product, Pizza):
+                product_dictionary["product_category"] = "pizza"
+                product_dictionary["size"] = product.get_size()
+                product_dictionary["type"] = product.get_type()
+                product_dictionary["toppings"] = product.get_toppings()
+            elif isinstance(product, Drink):
+                product_dictionary["product_category"] = "drink"
+                product_dictionary["type"] = product.get_type()
+            json["products"].append(product_dictionary)
+        return json
+
     def get_address(self) -> str:
         """Return the address of this order."""
         #TODO
+        
