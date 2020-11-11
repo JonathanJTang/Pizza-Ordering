@@ -1,3 +1,4 @@
+from order_parser import OrderParser
 from unittest.case import TestCase
 from delivery_method import DeliveryMethod
 import unittest
@@ -276,3 +277,50 @@ class TestPizzeriaDelivery(unittest.TestCase):
 
     def test_deliver(self):
         self.assertEqual(self.delivery.deliver(), "Your delivery is on its way!")
+
+
+class TestUberEatsDelivery(unittest.TestCase):
+    def setUp(self):
+        self.delivery = UberEatsDelivery("Dundas")
+
+    def test_initialize(self):
+        self.assertEqual(self.delivery.address, "Dundas")
+
+    def test_set_address(self):
+        self.delivery.set_address("St. George")
+        self.assertEqual(self.delivery.address, "St. George")
+
+    def test_deliver(self):
+        self.assertEqual(self.delivery.deliver(), "Your Uber Eats delivery is on its way!")
+
+
+class TestFoodoraDelivery(unittest.TestCase):
+    def setUp(self):
+        self.delivery = FoodoraDelivery("Dundas")
+
+    def test_initialize(self):
+        self.assertEqual(self.delivery.address, "Dundas")
+
+    def test_set_address(self):
+        self.delivery.set_address("St. George")
+        self.assertEqual(self.delivery.address, "St. George")
+
+    def test_deliver(self):
+        self.assertEqual(self.delivery.deliver(), "Your Foodora delivery is on its way!")
+
+
+class TestOrderParser(unittest.TestCase):
+    def setUp(self):
+        self.order_parser = OrderParser(1)
+
+    def test_initialize(self):
+        self.assertEqual(self.order_parser.data, 1)
+
+    def test_get_product_list(self):
+        self.assertRaises(NotImplementedError, self.order_parser.get_product_list)
+
+    def test_get_address(self):
+        self.assertRaises(NotImplementedError, self.order_parser.get_address)
+
+    def test_get_order_no(self):
+        self.assertRaises(NotImplementedError, self.order_parser.get_order_no)
