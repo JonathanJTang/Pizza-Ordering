@@ -1,3 +1,4 @@
+from delivery_method import DeliveryMethod
 import unittest
 from decimal import Decimal
 
@@ -244,3 +245,10 @@ class TestOrder(unittest.TestCase):
     def test_checkout(self):
         self.assertEqual(self.order.checkout(), Decimal("5.01"))
 
+
+class TestDeliveryMethod(unittest.TestCase):
+    def setUp(self):
+        self.delivery_method = DeliveryMethod()
+
+    def test_deliver(self):
+        self.assertRaises(NotImplementedError, self.delivery_method.deliver)
