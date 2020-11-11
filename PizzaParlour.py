@@ -39,7 +39,7 @@ def create_order():
         order_data = request.get_json(silent=True)
         if order_data is None or order_data.get(
                 "data_format") not in ("json_tree", "csv"):
-            raise ValidationError()
+            raise ValidationError("No valid JSON received")
         # Otherwise, we got a JSON object we can try to call validate() on
         if order_data["data_format"] == "json_tree":
             validate(order_data, data_formats.order_schema_json_tree)

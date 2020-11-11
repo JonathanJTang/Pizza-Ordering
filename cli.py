@@ -3,31 +3,44 @@ import requests
 from click_shell import shell
 
 BASE_URL = "http://127.0.0.1:5000"
-TOPPINGS_OPTIONS = ("Olives",
-                    "Tomatoes",
-                    "Mushrooms",
-                    "Jalapenos",
-                    "Chicken",
-                    "Beef",
-                    "Pepperoni",
-                    "Pineapple",
-                    "Bacon",
-                    "Extra cheese")
-DRINK_OPTIONS = ("Coke",
-                 "Diet Coke",
-                 "Coke Zero",
-                 "Pepsi",
-                 "Diet Pepsi",
-                 "Dr Pepper",
-                 "Water",
-                 "Juice")
+PIZZA_TYPE_OPTIONS = ("Pepperoni",
+                      "Margherita",
+                      "Vegetarian",
+                      "Neapolitan",
+                      "Custom")
+PIZZA_SIZE_OPTIONS = ("Small",
+                      "Medium",
+                      "Large",
+                      "Extra_large")
+PIZZA_TOPPINGS_OPTIONS = ("Olives",
+                          "Tomatoes",
+                          "Mushrooms",
+                          "Jalapenos",
+                          "Chicken",
+                          "Beef",
+                          "Pepperoni",
+                          "Pineapple",
+                          "Bacon",
+                          "Extra cheese")
+DRINK_TYPE_OPTIONS = ("Coke",
+                      "Diet Coke",
+                      "Coke Zero",
+                      "Pepsi",
+                      "Diet Pepsi",
+                      "Dr Pepper",
+                      "Water",
+                      "Juice")
+DELIVERY_OPTIONS = ("Pickup",
+                    "Pizzeria",
+                    "Uber Eats",
+                    "Foodora")
 
 
 def generate_base_order():
     base_order = {
         "products": [],
         "delivery_method": {
-            "delivery_type": "pickup",
+            "type": "pickup",
             "details": {}
         }
     }
@@ -36,9 +49,12 @@ def generate_base_order():
 
 def response_valid(response):
     if response.status_code != 200:
-        click.echo("Sorry, the previous command could not be submitted, "
-                   "please try again.\n"
-                   "Response from server: {}".format(response.text))
+        click.echo(
+            "Sorry, the previous command could not be submitted, "
+            "please try again.\n"
+            "Response from server: ({}) {}".format(
+                response.status_code,
+                response.text))
         return False
     return True
 
@@ -76,25 +92,29 @@ def new(globals):
               type=click.IntRange(min=1),
               default=1
               )
+@click.argument("pizza-size",
+                type=click.Choice(PIZZA_SIZE_OPTIONS, case_sensitive=False)
+                )
+@click.argument("pizza-type",
+                type=click.Choice(PIZZA_TYPE_OPTIONS, case_sensitive=False)
+                )
 @click.option("--toppings", "-t", required=False,
               help="Enter the toppings you would like",
-              type=click.Choice(TOPPINGS_OPTIONS, case_sensitive=False),
+              type=click.Choice(PIZZA_TOPPINGS_OPTIONS, case_sensitive=False),
               multiple=True
               )
-def pizza(number, toppings):
+@click.pass_obj
+def pizza(globals, number, pizza_size, pizza_type, toppings):
+    print("pizza_size={}, pizza_type={}".format(pizza_size, pizza_type))
     print("toppings={}, type={}".format(toppings, type(toppings)))
-    for topping in toppings:
-        pass
-    click.secho("Message", fg="green")
-    """{
+    pizza = {
         "product_category": "pizza",
-        "size": "small",
-        "type": "custom",
-        "toppings": [
-            "olive",
-            "chicken"
-        ]
-    },"""
+        "size": pizza_size,
+        "type": pizza_type,
+        "toppings": list(toppings)}
+    for _ in range(number):
+        globals["current_order"]["products"].append(pizza)
+    print(globals["current_order"])  # TODO: remove DEBUG
 
 
 @order.command()
@@ -104,7 +124,7 @@ def pizza(number, toppings):
               default=1
               )
 @click.argument("drink-type",
-                type=click.Choice(DRINK_OPTIONS, case_sensitive=False)
+                type=click.Choice(DRINK_TYPE_OPTIONS, case_sensitive=False)
                 )
 @click.pass_obj
 def drink(globals, number, drink_type):
@@ -112,13 +132,26 @@ def drink(globals, number, drink_type):
     drink = {"product_category": "drink", "type": drink_type.lower()}
     for _ in range(number):
         globals["current_order"]["products"].append(drink)
-    print(globals["current_order"])  # DEBUG
+    print(globals["current_order"])  # TODO: remove DEBUG
 
 
 @order.command()
 @click.pass_obj
 def submit(globals):
     print(globals["current_order"])
+    delivery_option = click.prompt(
+        "Please select a pickup/delivery method: "
+        "('Pickup' for in-store pickup, 'Pizzeria' for in-house delivery, "
+        "or one of 'Uber Eats', 'Foodora')", type=click.Choice(
+            DELIVERY_OPTIONS, case_sensitive=False), show_choices=False)
+    print(delivery_option, type(delivery_option))
+    delivery_option = delivery_option.replace(" ", "_")
+    globals["current_order"]["delivery_method"]["type"] = delivery_option
+    globals["current_order"]["data_format"] = "json_tree"
+    if (delivery_option != "pickup"):
+        address = click.prompt("Please enter your address", type=str)
+        globals["current_order"]["delivery_method"]["details"] = {"address": address}
+    
     try:
         response = requests.post(
             BASE_URL + "/api/orders",
