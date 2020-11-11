@@ -34,11 +34,11 @@ PIZZA_TOPPING_TO_PRICE = {
 """ Mapping of drink type to prices."""
 DRINK_TYPE_TO_PRICE = {
     "COKE"       : Decimal("2.00"),
-    "DIET COKE"  : Decimal("2.50"),
-    "COKE ZERO"  : Decimal("2.50"),
+    "DIET_COKE"  : Decimal("2.50"),
+    "COKE_ZERO"  : Decimal("2.50"),
     "PEPSI"      : Decimal("2.00"),
-    "DIET PEPSI" : Decimal("2.50"),
-    "DR PEPPER"  : Decimal("3.00"),
+    "DIET_PEPSI" : Decimal("2.50"),
+    "DR_PEPPER"  : Decimal("3.00"),
     "WATER"      : Decimal("1.00"),
     "JUICE"      : Decimal("3.01")
 }

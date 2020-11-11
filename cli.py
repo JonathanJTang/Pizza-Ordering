@@ -12,10 +12,10 @@ PIZZA_SIZE_OPTIONS = ("Small",
                       "Medium",
                       "Large",
                       "Extra_large")
-PIZZA_TOPPINGS_OPTIONS = ("Olives",
-                          "Tomatoes",
-                          "Mushrooms",
-                          "Jalapenos",
+PIZZA_TOPPINGS_OPTIONS = ("Olive",
+                          "Tomato",
+                          "Mushroom",
+                          "Jalapeno",
                           "Chicken",
                           "Beef",
                           "Pepperoni",
@@ -58,7 +58,10 @@ def valid_response(response, expect_json=False):
         return False
     if expect_json:
         try:
-            response.get_json()
+            response.json()
+        except Exception as exception:
+            print(exception)
+            return False
     return True
 
 
@@ -71,6 +74,24 @@ def main(context):
     # (populated only after the order has been submitted)
     context.obj = {"current_order": generate_base_order(),
                    "current_order_no": -1}
+
+
+@main.group()
+@click.argument("item", type=click.STRING, nargs=-1)
+def menu(item):
+    if item is None:
+        # Output full menu
+        pass
+    else:
+        try:
+            response = requests.get(BASE_URL + "/api/menu/" + item.replace(" ", "_"))
+            if response.status_code == 200:
+                click.echo("{}: ${}".format(item, response.text))
+            else:
+                click.echo("{} is not a valid menu item".format(item))
+        except Exception as exception:
+            print(exception)
+            return
 
 
 @main.group()
@@ -180,25 +201,43 @@ def submit(globals):
                    "Please try again later.")
         return
 
-    if valid_response(response):
-        try:
-            json_repsonse = response.json()
-            click.secho(
-                "Your order has been sucessfully submitted. The total price is "
-                "${}, and your order number is {}".format(
-                    json_repsonse["total_price"],
-                    json_repsonse["order_no"]))
-        except Exception as exception:
-            print(exception)
+    if valid_response(response, expect_json=True):
+        json_repsonse = response.json()
+        click.secho(
+            "Your order has been sucessfully submitted. The total price is "
+            "${}, and your order number is {}".format(
+                json_repsonse["total_price"],
+                json_repsonse["order_no"]))
+
+    # TODO: reset globals["current_order"] to generate_base_order() ??
 
 
-@order.command
-@click.argument("order-number",
-                type=click.IntRange(min=1),
-                )
+@order.command()
+@click.argument("order-number", type=click.IntRange(min=0))
 def edit(order_number):
     # Get this order from the server
-    pass
+    try:
+        response = requests.get(BASE_URL + "/api/orders/" + order_number)
+        if valid_response(response, expect_json=True):
+            selected_order = response.json()
+            echo_order(selected_order)
+    except Exception as exception:
+        print(exception)
+        return
+
+
+@order.command()
+@click.argument("order-number", type=click.IntRange(min=0))
+def cancel(order_number):
+    # Get this order from the server
+    try:
+        response = requests.get(BASE_URL + "/api/orders/" + order_number)
+        if valid_response(response, expect_json=True):
+            selected_order = response.json()
+            echo_order(selected_order)
+    except Exception as exception:
+        print(exception)
+        return
 
 
 @main.command()

@@ -15,6 +15,12 @@ orders = {}
 next_order_no = 1
 
 
+def valid_order_no(order_no):
+    """Return True iff order_no is a valid order number, ie the order number of
+    an order placed in this session of the server."""
+    return order_no in orders
+
+
 @app.route('/pizza', methods=["GET", "POST"])
 def welcome_pizza():
     """ We will put order to server or get the current order from server
@@ -36,7 +42,6 @@ def create_order():
     """Receive an order made by a client."""
     global next_order_no
     current_order_no = next_order_no
-    next_order_no += 1
     new_cart = Cart()
 
     try:
@@ -63,6 +68,7 @@ def create_order():
         print(err)
         return "An error occurred on the server", 500
 
+    next_order_no += 1
     orders[current_order_no] = Order(current_order_no, new_cart)
     response = {"order_no": current_order_no,
                 "total_price": new_cart.get_total_price()}
@@ -71,14 +77,32 @@ def create_order():
 
 @app.route('/api/orders/<int:order_no>', methods=['GET'])
 def get_order(order_no):
-    current_order = orders[order_no]
-    return jsonify(current_order)
+    """Return the products in the order given by order_no. Returns a 404 status
+    code if order_no is not a valid order number."""
+    if not valid_order_no(order_no):
+        return "Not a valid order number", 404
+    # TODO: use custom method to convert the list of products to JSON
+    # return jsonify(orders[order_no].get_cart().get_products())
 
 
 @app.route('/api/orders/<int:order_no>', methods=['PATCH'])
 def edit_order(order_no):
+    if not valid_order_no(order_no):
+        return "Not a valid order number", 404
+    # TODO: complete edit_order
     orders[order_no]
-    return order_no
+    return "Successfully"
+
+
+@app.route('/api/orders/<int:order_no>', methods=['DELETE'])
+def cancel_order(order_no):
+    """Cancel the order given by order_no. Returns a 404 status code if order_no
+    is not a valid order number."""
+    if not valid_order_no(order_no):
+        return "Not a valid order number", 404
+    # Remove the order from memory
+    del orders[order_no]
+    return "Successfully deleted order {}".format(order_no)
 
 
 @app.route('/api/menu')
@@ -91,8 +115,9 @@ def get_full_menu():
     return jsonify(full_menu)
 
 
-@app.route('/api/menu/<str:item>', methods=['GET'])
+@app.route('/api/menu/<string:item>', methods=['GET'])
 def get_menu_item_price(item):
+    item = item.upper()  # Dictionaries here use uppercase keys
     price = options.DRINK_TYPE_TO_PRICE.get(item)
     if price is not None:
         return jsonify(price)
