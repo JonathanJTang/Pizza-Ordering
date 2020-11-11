@@ -16,15 +16,18 @@
         }
     ],
     "delivery_method": {
-        "delivery_type": "pickup",
-        "details": {}
+        "type": "pizzeria",
+        "details": {
+            "address": "74 random street",
+            "order_no": 1
+        }
     }
 }
 
 order_schema_csv = {
     "type": "object",
     "properties": {
-        "data_format": {"type": "string", "pattern": "json_tree"},
+        "data_format": {"type": "string", "pattern": "^csv$"},
         "products": {"type": "string"},
         "delivery_method": {"type": "string"}
     },
@@ -38,7 +41,7 @@ order_schema_csv = {
 order_schema_json_tree = {
     "type": "object",
     "properties": {
-        "data_format": {"type": "string", "pattern": "json_tree"},
+        "data_format": {"type": "string", "pattern": "^json_tree$"},
         "products": {
             "type": "array",
             "items": {
@@ -48,7 +51,7 @@ order_schema_json_tree = {
                         "properties": {
                             "product_category": {
                                 "type": "string",
-                                "pattern": "pizza"
+                                "pattern": "^pizza$"
                             },
                             "size": {
                                 "type": "string",
@@ -100,7 +103,7 @@ order_schema_json_tree = {
                         "properties": {
                             "product_category": {
                                 "type": "string",
-                                "pattern": "drink"
+                                "pattern": "^drink$"
                             },
                             "type": {
                                 "type": "string",
@@ -126,23 +129,40 @@ order_schema_json_tree = {
         },
         "delivery_method": {
             "type": "object",
-            "properties": {
-                "delivery_type": {
-                    "type": "string",
-                    "enum": [
-                        "pickup",
-                        "pizzeria",
-                        "ubereats",
-                        "foodora"
+            "oneOf": [
+                {
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "pattern": "^pickup$"
+                        },
+                    },
+                    "required": [
+                        "type",
                     ]
                 },
-                "details": {
-                    "type": "object"
-                }
-            },
-            "required": [
-                "delivery_type",
-                "details"
+                {
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "pattern": "^(pizzeria|uber_eats|foodora)$"
+                        },
+                        "details": {
+                            "type": "object",
+                            "properties": {
+                                "address": {"type": "string"},
+                                "order_no": {"type": "integer"}
+                            },
+                            "required": [
+                                "address"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "details"
+                    ]
+                },
             ]
         }
     },
@@ -152,6 +172,3 @@ order_schema_json_tree = {
         "delivery_method"
     ]
 }
-
-# csv data for Foodora
-"ProductType,Proda, adjf, asdijfai"
