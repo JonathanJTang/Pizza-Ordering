@@ -321,6 +321,4 @@ class TestOrderParser(unittest.TestCase):
 
     def test_get_address(self):
         self.assertRaises(NotImplementedError, self.order_parser.get_address)
-
-    def test_get_order_no(self):
-        self.assertRaises(NotImplementedError, self.order_parser.get_order_no)
+        

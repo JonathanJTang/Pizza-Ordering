@@ -13,10 +13,6 @@ class OrderParser:
         """Return the list of products in this order."""
         raise NotImplementedError()
 
-    def get_order_no(self) -> int:
-        """Return the order number of this order."""
-        raise NotImplementedError()
-
     def get_address(self) -> str:
         """Return the address of this order."""
         raise NotImplementedError()
