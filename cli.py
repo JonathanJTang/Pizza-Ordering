@@ -21,18 +21,18 @@ PIZZA_TOPPINGS_OPTIONS = ("Olives",
                           "Pepperoni",
                           "Pineapple",
                           "Bacon",
-                          "Extra cheese")
+                          "Extra_cheese")
 DRINK_TYPE_OPTIONS = ("Coke",
-                      "Diet Coke",
-                      "Coke Zero",
+                      "Diet_Coke",
+                      "Coke_Zero",
                       "Pepsi",
-                      "Diet Pepsi",
-                      "Dr Pepper",
+                      "Diet_Pepsi",
+                      "Dr_Pepper",
                       "Water",
                       "Juice")
 DELIVERY_OPTIONS = ("Pickup",
                     "Pizzeria",
-                    "Uber Eats",
+                    "Uber_Eats",
                     "Foodora")
 
 
@@ -47,7 +47,7 @@ def generate_base_order():
     return base_order
 
 
-def response_valid(response):
+def valid_response(response, expect_json=False):
     if response.status_code != 200:
         click.echo(
             "Sorry, the previous command could not be submitted, "
@@ -56,6 +56,9 @@ def response_valid(response):
                 response.status_code,
                 response.text))
         return False
+    if expect_json:
+        try:
+            response.get_json()
     return True
 
 
@@ -135,6 +138,21 @@ def drink(globals, number, drink_type):
     print(globals["current_order"])  # TODO: remove DEBUG
 
 
+def echo_order(current_order):
+    for index, product in enumerate(current_order["products"]):
+        # Number the products in the order starting from 1
+        click.echo(index + 1, nl=False, color="blue")
+        if product["product_category"] == "drink":
+            click.echo()
+        elif product["product_category"] == "pizza":
+            click.echo(
+                "{} {} pizza with additional {}".format(
+                    product["size"],
+                    product["type"],
+                    ",".join(
+                        product["toppings"])))
+
+
 @order.command()
 @click.pass_obj
 def submit(globals):
@@ -142,16 +160,17 @@ def submit(globals):
     delivery_option = click.prompt(
         "Please select a pickup/delivery method: "
         "('Pickup' for in-store pickup, 'Pizzeria' for in-house delivery, "
-        "or one of 'Uber Eats', 'Foodora')", type=click.Choice(
+        "or one of 'Uber_Eats', 'Foodora')", type=click.Choice(
             DELIVERY_OPTIONS, case_sensitive=False), show_choices=False)
     print(delivery_option, type(delivery_option))
-    delivery_option = delivery_option.replace(" ", "_")
+    delivery_option = delivery_option.lower()
     globals["current_order"]["delivery_method"]["type"] = delivery_option
     globals["current_order"]["data_format"] = "json_tree"
     if (delivery_option != "pickup"):
         address = click.prompt("Please enter your address", type=str)
-        globals["current_order"]["delivery_method"]["details"] = {"address": address}
-    
+        globals["current_order"]["delivery_method"]["details"] = {
+            "address": address}
+
     try:
         response = requests.post(
             BASE_URL + "/api/orders",
@@ -161,19 +180,25 @@ def submit(globals):
                    "Please try again later.")
         return
 
-    if response_valid(response):
+    if valid_response(response):
         try:
-            print(response.status_code)
-            print(response.text)
             json_repsonse = response.json()
             click.secho(
                 "Your order has been sucessfully submitted. The total price is "
-                "{}, and your order number is {}".format(
+                "${}, and your order number is {}".format(
                     json_repsonse["total_price"],
                     json_repsonse["order_no"]))
-            print(response.json())
         except Exception as exception:
             print(exception)
+
+
+@order.command
+@click.argument("order-number",
+                type=click.IntRange(min=1),
+                )
+def edit(order_number):
+    # Get this order from the server
+    pass
 
 
 @main.command()

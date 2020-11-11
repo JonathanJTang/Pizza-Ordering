@@ -1,14 +1,13 @@
 from flask import Flask, jsonify, request
-from requests.api import options
 from jsonschema import ValidationError, validate
 
 import data_formats
-from cart import Cart
-from order import Order
-from json_parser import JsonParser
-from drink import Drink
-from pizza import Pizza
 import options
+from cart import Cart
+from drink import Drink
+from json_parser import JsonParser
+from order import Order
+from pizza import Pizza
 
 app = Flask("Assignment 2")
 
@@ -70,9 +69,40 @@ def create_order():
     return jsonify(response)
 
 
-@app.route('/api/orders/<int:order_id>', methods=['GET'])
-def edit_order(order_id):
-    return order_id
+@app.route('/api/orders/<int:order_no>', methods=['GET'])
+def get_order(order_no):
+    current_order = orders[order_no]
+    return jsonify(current_order)
+
+
+@app.route('/api/orders/<int:order_no>', methods=['PATCH'])
+def edit_order(order_no):
+    orders[order_no]
+    return order_no
+
+
+@app.route('/api/menu')
+def get_full_menu():
+    full_menu = {
+        "pizza types": options.PIZZA_TYPE_TO_PRICE,
+        "pizza sizes": options.PIZZA_SIZE_TO_PRICE,
+        "pizza toppings": options.PIZZA_TOPPING_TO_PRICE,
+        "drink types": options.DRINK_TYPE_TO_PRICE}
+    return jsonify(full_menu)
+
+
+@app.route('/api/menu/<str:item>', methods=['GET'])
+def get_menu_item_price(item):
+    price = options.DRINK_TYPE_TO_PRICE.get(item)
+    if price is not None:
+        return jsonify(price)
+    price = options.PIZZA_TYPE_TO_PRICE.get(item)
+    if price is not None:
+        return jsonify(price)
+    price = options.PIZZA_TOPPING_TO_PRICE.get(item)
+    if price is not None:
+        return jsonify(price)
+    return "Not a valid menu item", 400
 
 
 if __name__ == "__main__":
