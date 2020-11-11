@@ -81,8 +81,8 @@ def get_order(order_no):
     code if order_no is not a valid order number."""
     if not valid_order_no(order_no):
         return "Not a valid order number", 404
-    # TODO: use custom method to convert the list of products to JSON
-    # return jsonify(orders[order_no].get_cart().get_products())
+    parser = JsonParser()
+    return parser.get_json(orders[order_no].get_cart().get_products())
 
 
 @app.route('/api/orders/<int:order_no>', methods=['PATCH'])
