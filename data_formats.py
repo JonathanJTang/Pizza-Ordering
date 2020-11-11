@@ -21,9 +21,24 @@
     }
 }
 
-order_schema = {
+order_schema_csv = {
     "type": "object",
     "properties": {
+        "data_format": {"type": "string", "pattern": "json_tree"},
+        "products": {"type": "string"},
+        "delivery_method": {"type": "string"}
+    },
+    "required": [
+        "data_format",
+        "products",
+        "delivery_method"
+    ]
+}
+
+order_schema_json_tree = {
+    "type": "object",
+    "properties": {
+        "data_format": {"type": "string", "pattern": "json_tree"},
         "products": {
             "type": "array",
             "items": {
@@ -132,6 +147,7 @@ order_schema = {
         }
     },
     "required": [
+        "data_format",
         "products",
         "delivery_method"
     ]
