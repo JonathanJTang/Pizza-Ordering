@@ -1,9 +1,3 @@
-
-
-# CSV data sample for Foodora
-"product,type,size,toppings1|toppings2|... ... delivery_method,address,order_no"
-
-
 order_schema_csv = {
     "type": "object",
     "properties": {

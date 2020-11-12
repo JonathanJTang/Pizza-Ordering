@@ -40,42 +40,14 @@ def welcome_pizza():
 
 @app.route('/api/orders', methods=["POST"])
 def create_order():
-    """Receive an order made by a client."""
+    """Receive an order made by a client, and return the assigned order
+    number."""
     global next_order_no
+    # Create an Order object for this order.
     current_order_no = next_order_no
-    new_cart = Cart()
-
-    try:
-        order_data = request.get_json(silent=True)
-        if order_data is None or order_data.get(
-                "data_format") not in ("json_tree", "csv"):
-            raise ValidationError("No valid JSON received")
-        # Otherwise, we got a JSON object we can try to call validate() on
-        if order_data["data_format"] == "json_tree":
-            validate(order_data, data_formats.order_schema_json_tree)
-            print("JSON validation success")
-            parser = JsonParser()
-            for product in parser.get_product_list(order_data):
-                new_cart.add_product(product)
-        elif order_data["data_format"] == "csv":
-            validate(order_data, data_formats.order_schema_csv)
-            parser = CsvParser()
-            for product in parser.get_product_list(order_data["csv_string"]):
-                new_cart.add_product(product)
-    except ValidationError as err:
-        print(err)
-        print("JSON validation failed")
-        return "No valid JSON payload", 400
-    except Exception as err:
-        print(err)
-        return "An error occurred on the server", 500
-
     next_order_no += 1
-    #TODO Get delivery method from cli, instantiate it and give it to orders. If it is pickup, we don't need to give it.
-    orders[current_order_no] = Order(current_order_no, new_cart)
-    response = {"order_no": current_order_no,
-                "total_price": new_cart.get_total_price()}
-    return jsonify(response)
+    orders[current_order_no] = Order(current_order_no, Cart())
+    return str(current_order_no)
 
 
 @app.route('/api/orders/<int:order_no>', methods=['GET'])
@@ -93,8 +65,41 @@ def edit_order(order_no):
     if not valid_order_no(order_no):
         return "Not a valid order number", 404
     # TODO: complete edit_order
-    orders[order_no]
-    return "Successfully"
+
+    return "Successfully edited order {}".format(order_no)
+
+
+@app.route('/api/orders/<int:order_no>', methods=['PUT'])
+def replace_order(order_no):
+    """Replace the order at order_no with the received data. Returns a 404
+    status code if order_no is not a valid order number."""
+    if not valid_order_no(order_no):
+        return "Not a valid order number", 404
+    order = orders[order_no]
+    try:
+        order_data = request.get_json(silent=True)
+        if order_data is None or order_data.get(
+                "data_format") not in ("json_tree", "csv"):
+            raise ValidationError("No valid JSON received")
+        # Otherwise, we got a JSON object we can try to call validate() on
+        if order_data["data_format"] == "json_tree":
+            validate(order_data, data_formats.order_schema_json_tree)
+            print("JSON validation success")
+            for product in JsonParser().get_product_list(order_data):
+                order.get_cart().add_product(product)
+        elif order_data["data_format"] == "csv":
+            validate(order_data, data_formats.order_schema_csv)
+            for product in CsvParser().get_product_list(
+                    order_data["csv_string"]):
+                order.get_cart().add_product(product)
+    except ValidationError as err:
+        print(err)
+        print("JSON validation failed")
+        return "No valid JSON payload", 400
+    except Exception as err:
+        print(err)
+        return "An error occurred on the server", 500
+    return jsonify({"total_price": order.get_cart().get_total_price()})
 
 
 @app.route('/api/orders/<int:order_no>', methods=['DELETE'])
