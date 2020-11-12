@@ -199,8 +199,8 @@ def convert_to_csv(order_data):
     for item in order_data["products"]:
         if item["product_category"] == "pizza":
             product_strings.append(
-                ",".join("pizza", item["type"], item["size"],
-                         "|".join(item["toppings"])))
+                ",".join(("pizza", item["type"], item["size"],
+                         "|".join(item["toppings"]))))
         elif item["product_category"] == "drink":
             product_strings.append(",".join(("drink", item["type"], "")))
     delivery_string = ",".join(
@@ -241,7 +241,7 @@ def submit(globals):
             "address": address, "order_no": order_no}
         if (delivery_option == "foodora"):
             csv_string = convert_to_csv(globals["current_order"])
-            repr(csv_string)  # TODO: remove DEBUG
+            print(repr(csv_string))  # TODO: remove DEBUG
             globals["current_order"].clear()
             globals["current_order"]["data_format"] = "csv"
             globals["current_order"]["csv_string"] = csv_string
