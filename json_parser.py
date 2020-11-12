@@ -1,3 +1,8 @@
+from uber_eats_delivery import UberEatsDelivery
+from foodora_delivery import FoodoraDelivery
+from pizzeria_delivery import PizzeriaDelivery
+from pickup import Pickup
+from delivery_method import DeliveryMethod
 from order_parser import OrderParser
 from order import Order
 from product import Product
@@ -38,7 +43,11 @@ class JsonParser(OrderParser):
             json["products"].append(product_dictionary)
         return json
 
-    def get_address(self) -> str:
+    def get_address(self, json) -> str:
         """Return the address of this order."""
-        #TODO
+        return json["delivery_method"]["details"]["address"]
+        
+    def get_order_no(self, json) -> int:
+        """Return the order number of this order."""
+        return json["delivery_method"]["details"]["order_no"]
         

@@ -24,17 +24,19 @@
     }
 }
 
+# CSV data sample for Foodora
+"product,size,type,toppings1,toppings2... ... delivery_method,address,order_no"
+
+
 order_schema_csv = {
     "type": "object",
     "properties": {
         "data_format": {"type": "string", "pattern": "^csv$"},
-        "products": {"type": "string"},
-        "delivery_method": {"type": "string"}
+        "csv_string": {"type": "string"}
     },
     "required": [
         "data_format",
-        "products",
-        "delivery_method"
+        "csv_string"
     ]
 }
 

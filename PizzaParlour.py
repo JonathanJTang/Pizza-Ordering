@@ -1,3 +1,4 @@
+from csv_parser import CsvParser
 from flask import Flask, jsonify, request
 from jsonschema import ValidationError, validate
 
@@ -58,8 +59,9 @@ def create_order():
                 new_cart.add_product(product)
         elif order_data["data_format"] == "csv":
             validate(order_data, data_formats.order_schema_csv)
-            # TODO: use CSV parser to add the products in
-            # order_data["products"] to the cart
+            parser = CsvParser()
+            for product in parser.get_product_list(order_data["csv_string"]):
+                new_cart.add_product(product)
     except ValidationError as err:
         print(err)
         print("JSON validation failed")
@@ -69,6 +71,7 @@ def create_order():
         return "An error occurred on the server", 500
 
     next_order_no += 1
+    #TODO Get delivery method from cli, instantiate it and give it to orders. If it is pickup, we don't need to give it.
     orders[current_order_no] = Order(current_order_no, new_cart)
     response = {"order_no": current_order_no,
                 "total_price": new_cart.get_total_price()}

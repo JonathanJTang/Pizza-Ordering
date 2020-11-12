@@ -4,21 +4,14 @@ from product import Product
 from typing import Any, List, Dict
 from pizza import Pizza
 from drink import Drink
+
 import csv
 
 
 class CsvParser(OrderParser):
     """A class to parse csv object into internal data structures."""
 
-    def __init__(self, csv: Dict[str, Any]):
-        """Initialize a csv parser. """
-        self.set_csv(csv)
-
-    def set_json(self, csv):
-        """Set this csv parsers csv to csv"""
-        self.csv = csv
-
-    def get_product_list(self) -> List[Product]:
+    def get_product_list(self, csv) -> List[Product]:
         """Return the list of products in this order."""
         list_products = []
         split_lines = self.csv.split("\n")
@@ -32,6 +25,14 @@ class CsvParser(OrderParser):
                 list_products.append(drink)
         return list_products
 
-    def get_address(self) -> str:
+    def get_address(self, csv) -> str:
         """Return the address of this order."""
-        #TODO
+        split_lines = self.csv.split("\n")
+        delivery_line = split_lines[-1]
+        return delivery_line[1]
+        
+    def get_order_no(self, csv) -> int:
+        """Return the order number of this order."""
+        split_lines = self.csv.split("\n")
+        delivery_line = split_lines[-1]
+        return delivery_line[2]
