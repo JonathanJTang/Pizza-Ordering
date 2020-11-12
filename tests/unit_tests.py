@@ -1,6 +1,5 @@
 import unittest
 from decimal import Decimal
-from unittest.case import TestCase
 
 import options
 from cart import Cart
@@ -249,8 +248,10 @@ class TestCart(unittest.TestCase):
         self.cart.add_product(Drink("Juice"))
         self.cart.add_product(Drink("Coke"))
         products = self.cart.get_products()
-        self.assertEqual(products[0].get_type(), "JUICE")
-        self.assertEqual(products[1].get_type(), "COKE")
+        self.assertEqual(products[0][0], 1)  # Currently id indexing starts at 1
+        self.assertEqual(products[0][1].get_type(), "JUICE")
+        self.assertEqual(products[1][0], 2)
+        self.assertEqual(products[1][1].get_type(), "COKE")
 
 
 class TestOrder(unittest.TestCase):
@@ -265,8 +266,8 @@ class TestOrder(unittest.TestCase):
     def test_initialize_order(self):
         self.assertEqual(self.order.order_no, 0)
         self.assertIsInstance(self.order.delivery_method, Pickup)
-        self.assertEqual(self.order.cart.get_products()[0].get_type(), "JUICE")
-        self.assertEqual(self.order.cart.get_products()[1].get_type(), "COKE")
+        self.assertEqual(self.order.cart.get_products()[0][1].get_type(), "JUICE")
+        self.assertEqual(self.order.cart.get_products()[1][1].get_type(), "COKE")
         self.assertEqual(len(self.order.cart.get_products()), 2)
         new_delivery_method = FoodoraDelivery("32 random")
         new_order = Order(3, self.cart, new_delivery_method)
@@ -277,9 +278,9 @@ class TestOrder(unittest.TestCase):
 
     def test_get_cart(self):
         self.assertEqual(self.order.get_cart().get_products()
-                         [0].get_type(), "JUICE")
+                         [0][1].get_type(), "JUICE")
         self.assertEqual(self.order.get_cart().get_products()
-                         [1].get_type(), "COKE")
+                         [1][1].get_type(), "COKE")
 
     def test_get_delivery_method(self):
         self.assertIsInstance(self.order.get_delivery_method(), Pickup)
@@ -289,7 +290,7 @@ class TestOrder(unittest.TestCase):
         new_cart.add_product(Drink("Coke"))
         self.order.set_cart(new_cart)
         self.assertEqual(self.order.get_cart().get_products()
-                         [0].get_type(), "COKE")
+                         [0][1].get_type(), "COKE")
         self.assertEqual(len(self.order.get_cart().get_products()), 1)
 
     def test_set_delivery_method(self):
@@ -426,7 +427,8 @@ class TestJsonParser(unittest.TestCase):
 
     def test_get_json(self):
         new_json = self.parser.get_json(
-            [Pizza("small", ["Pepperoni"], "Custom"), Drink("Water")])
+            [(1, Pizza("small", ["Pepperoni"], "Custom")), (3, Drink("Water"))])
+        self.assertEqual(new_json["products"][0]["cart_item_id"], 1)
         self.assertEqual(new_json["products"][0]["product_category"], "pizza")
         self.assertEqual(new_json["products"][0]["size"], "SMALL")
         self.assertEqual(new_json["products"][0]["type"], "CUSTOM")

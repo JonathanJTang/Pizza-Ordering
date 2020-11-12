@@ -46,8 +46,9 @@ class Cart:
         return total
 
     def get_products(self) -> List[Product]:
-        """Return a list of Products in the Cart."""
+        """Return a list of (cart_item_id, products) tuples of Products in the
+        Cart."""
         product_list = []
-        for key in sorted(self.products.keys()):
-            product_list.append(self.products[key])
+        for cart_item_id in sorted(self.products.keys()):
+            product_list.append((cart_item_id, self.products[cart_item_id]))
         return product_list

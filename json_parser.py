@@ -1,14 +1,9 @@
-from uber_eats_delivery import UberEatsDelivery
-from foodora_delivery import FoodoraDelivery
-from pizzeria_delivery import PizzeriaDelivery
-from pickup import Pickup
-from delivery_method import DeliveryMethod
-from order_parser import OrderParser
-from order import Order
-from product import Product
-from typing import Any, List, Dict, Tuple
-from pizza import Pizza
+from typing import Any, Dict, List, Tuple
+
 from drink import Drink
+from order_parser import OrderParser
+from pizza import Pizza
+from product import Product
 
 
 class JsonParser(OrderParser):
@@ -20,17 +15,21 @@ class JsonParser(OrderParser):
         product_dictionaries_list = json["products"]
         for product in product_dictionaries_list:
             if product["product_category"] == "pizza":
-                pizza = Pizza(product["size"], product["toppings"], product["type"])
+                pizza = Pizza(
+                    product["size"],
+                    product["toppings"],
+                    product["type"])
                 list_products.append(pizza)
             elif product["product_category"] == "drink":
                 drink = Drink(product["type"])
                 list_products.append(drink)
         return list_products
 
-    def get_json(self, product_list: List[Tuple[int, Product]]) -> Tuple[int, Dict[str, Any]]:
+    def get_json(self, product_list: List[Tuple[int, Product]]) \
+                    -> Tuple[int, Dict[str, Any]]:
         """Return a dictionary to be jsonified from product list."""
         json = {"products": []}
-        for cart_item_id,product in product_list:
+        for cart_item_id, product in product_list:
             product_dictionary = {}
             product_dictionary["cart_item_id"] = cart_item_id
             if isinstance(product, Pizza):
@@ -47,8 +46,7 @@ class JsonParser(OrderParser):
     def get_address(self, json) -> str:
         """Return the address of this order."""
         return json["delivery_method"]["details"]["address"]
-        
+
     def get_order_no(self, json) -> int:
         """Return the order number of this order."""
         return json["delivery_method"]["details"]["order_no"]
-        
