@@ -65,7 +65,6 @@ def edit_order(order_no):
     if not valid_order_no(order_no):
         return "Not a valid order number", 404
     # TODO: complete edit_order
-[INDEX:int, ]
     return "Successfully edited order {}".format(order_no)
 
 
