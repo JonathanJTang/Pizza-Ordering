@@ -17,6 +17,7 @@ from PizzaParlour import app
 from pizzeria_delivery import PizzeriaDelivery
 from product import Product
 from uber_eats_delivery import UberEatsDelivery
+from csv_parser import CsvParser
 
 # JSON data sample for Uber Eats
 sample_json = {
@@ -435,38 +436,39 @@ class TestJsonParser(unittest.TestCase):
 class TestCsvParser(unittest.TestCase):
     def setUp(self):
         self.csv_string = 'drink,coke_zero,\npizza,custom,small,\npizza,pepperoni,extra_large,olive\nfoodora,27 random street,2'
-        self.parser = JsonParser()
+        self.parser = CsvParser()
         setup_options()
 
     def test_get_product_list(self):
         self.assertIsInstance(
             self.parser.get_product_list(
-                self.json)[0], Pizza)
+                self.csv_string)[0], Drink)
         self.assertEqual(
             self.parser.get_product_list(
-                self.json)[0].get_price(),
-            Decimal("8.99"))
+                self.csv_string)[0].get_type(),
+            "COKE_ZERO")
         self.assertIsInstance(
             self.parser.get_product_list(
-                self.json)[1], Drink)
+                self.csv_string)[1], Pizza)
         self.assertEqual(
             self.parser.get_product_list(
-                self.json)[1].get_price(),
-            Decimal("2.00"))
+                self.csv_string)[1].get_type(),
+            "CUSTOM")
+        self.assertEqual(
+            self.parser.get_product_list(
+                self.csv_string)[1].get_size(),
+            "SMALL")
+        self.assertEqual(
+            self.parser.get_product_list(
+                self.csv_string)[1].get_toppings(),
+            [])
 
     def test_get_address(self):
         self.assertEqual(
             self.parser.get_address(
-                self.json),
-            "74 random street")
+                self.csv_string),
+            "27 random street")
 
     def test_get_order_no(self):
-        self.assertEqual(self.parser.get_order_no(self.json), 1)
+        self.assertEqual(self.parser.get_order_no(self.csv_string), 2)
 
-    def test_get_json(self):
-        new_json = self.parser.get_json(
-            [Pizza("small", ["Pepperoni"], "Custom"), Drink("Water")])
-        self.assertEqual(new_json["products"][0]["product_category"], "pizza")
-        self.assertEqual(new_json["products"][0]["size"], "SMALL")
-        self.assertEqual(new_json["products"][0]["type"], "CUSTOM")
-        self.assertEqual(new_json["products"][0]["toppings"], ["PEPPERONI"])

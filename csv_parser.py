@@ -15,9 +15,12 @@ class CsvParser(OrderParser):
         for line in split_lines:
             split_line = line.split(",")
             if split_line[0] == "pizza":
-                pizza = Pizza(split_line[2], split_line[3].split("|"), split_line[1]) #TODO test for no toppings.
+                toppings = split_line[3].split("|")
+                if toppings[0] == "":
+                    toppings = []
+                pizza = Pizza(split_line[2], toppings, split_line[1]) #TODO test for no toppings.
                 list_products.append(pizza)
-            elif split_line[1] == "drink":
+            elif split_line[0] == "drink":
                 drink = Drink(split_line[1])
                 list_products.append(drink)
         return list_products
@@ -26,10 +29,10 @@ class CsvParser(OrderParser):
         """Return the address of this order."""
         split_lines = csv.split("\n")
         delivery_line = split_lines[-1]
-        return delivery_line[1]
+        return delivery_line.split(",")[1]
         
     def get_order_no(self, csv) -> int:
         """Return the order number of this order."""
         split_lines = csv.split("\n")
         delivery_line = split_lines[-1]
-        return delivery_line[2]
+        return int(delivery_line.split(",")[2])

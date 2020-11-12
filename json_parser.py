@@ -6,7 +6,7 @@ from delivery_method import DeliveryMethod
 from order_parser import OrderParser
 from order import Order
 from product import Product
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Tuple
 from pizza import Pizza
 from drink import Drink
 
@@ -27,11 +27,12 @@ class JsonParser(OrderParser):
                 list_products.append(drink)
         return list_products
 
-    def get_json(self, product_list: List[Product]) -> Dict[str, Any]:
+    def get_json(self, product_list: List[Tuple[int, Product]]) -> Tuple[int, Dict[str, Any]]:
         """Return a dictionary to be jsonified from product list."""
         json = {"products": []}
-        for product in product_list:
+        for cart_item_id,product in product_list:
             product_dictionary = {}
+            product_dictionary["cart_item_id"] = cart_item_id
             if isinstance(product, Pizza):
                 product_dictionary["product_category"] = "pizza"
                 product_dictionary["size"] = product.get_size().upper()
