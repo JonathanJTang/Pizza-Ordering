@@ -1,31 +1,7 @@
-# JSON data sample for Uber Eats
-{
-    "products": [
-        {
-            "product_category": "pizza",
-            "size": "small",
-            "type": "custom",
-            "toppings": [
-                "olive",
-                "chicken"
-            ]
-        },
-        {
-            "product_category": "drink",
-            "type": "coke"
-        }
-    ],
-    "delivery_method": {
-        "type": "pizzeria",
-        "details": {
-            "address": "74 random street",
-            "order_no": 1
-        }
-    }
-}
+
 
 # CSV data sample for Foodora
-"product,size,type,toppings1,toppings2... ... delivery_method,address,order_no"
+"product,type,size,toppings1|toppings2|... ... delivery_method,address,order_no"
 
 
 order_schema_csv = {

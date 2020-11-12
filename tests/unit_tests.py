@@ -1,3 +1,4 @@
+from json_parser import JsonParser
 from order_parser import OrderParser
 from unittest.case import TestCase
 from delivery_method import DeliveryMethod
@@ -5,6 +6,7 @@ import unittest
 from decimal import Decimal
 
 from cart import Cart
+import options
 from drink import Drink
 from foodora_delivery import FoodoraDelivery
 from invalid_option_error import InvalidOptionError
@@ -16,6 +18,39 @@ from pizzeria_delivery import PizzeriaDelivery
 from product import Product
 from uber_eats_delivery import UberEatsDelivery
 
+
+# JSON data sample for Uber Eats
+sample_json = {
+    "products": [
+        {
+            "product_category": "pizza",
+            "size": "small",
+            "type": "custom",
+            "toppings": [
+                "olive",
+                "chicken"
+            ]
+        },
+        {
+            "product_category": "drink",
+            "type": "coke"
+        }
+    ],
+    "delivery_method": {
+        "type": "pizzeria",
+        "details": {
+            "address": "74 random street",
+            "order_no": 1
+        }
+    }
+}
+
+
+def setup_options():
+    Pizza.set_topping_to_price(options.PIZZA_TOPPING_TO_PRICE)
+    Pizza.set_size_to_price(options.PIZZA_SIZE_TO_PRICE)
+    Pizza.set_type_to_price(options.PIZZA_TYPE_TO_PRICE)
+    Drink.set_type_to_price(options.DRINK_TYPE_TO_PRICE)
 
 def test_pizza():
     response = app.test_client().get('/pizza')
@@ -221,6 +256,9 @@ class TestOrder(unittest.TestCase):
         self.assertEqual(self.order.cart.get_products()[0].get_type(), "JUICE")
         self.assertEqual(self.order.cart.get_products()[1].get_type(), "COKE")
         self.assertEqual(len(self.order.cart.get_products()), 2)
+        new_delivery_method = FoodoraDelivery("32 random")
+        new_order = Order(3, self.cart, new_delivery_method)
+        self.assertIsInstance(new_order.delivery_method, FoodoraDelivery)
 
     def test_get_order_no(self):
         self.assertEqual(self.order.get_order_no(), 0)
@@ -311,14 +349,66 @@ class TestFoodoraDelivery(unittest.TestCase):
 
 class TestOrderParser(unittest.TestCase):
     def setUp(self):
-        self.order_parser = OrderParser(1)
-
-    def test_initialize(self):
-        self.assertEqual(self.order_parser.data, 1)
+        self.order_parser = OrderParser()
 
     def test_get_product_list(self):
-        self.assertRaises(NotImplementedError, self.order_parser.get_product_list)
+        self.assertRaises(NotImplementedError, self.order_parser.get_product_list, None)
 
     def test_get_address(self):
-        self.assertRaises(NotImplementedError, self.order_parser.get_address)
+        self.assertRaises(NotImplementedError, self.order_parser.get_address, None)
+
+    def test_get_order_no(self):
+        self.assertRaises(NotImplementedError, self.order_parser.get_order_no, None)
+
+class TestJsonParser(unittest.TestCase):
+    def setUp(self):
+        self.json = sample_json
+        self.parser = JsonParser()
+        setup_options()
+
+    def test_get_product_list(self):
+        self.assertIsInstance(self.parser.get_product_list(self.json)[0], Pizza)
+        self.assertEqual(self.parser.get_product_list(self.json)[0].get_price(), Decimal("8.99"))
+        self.assertIsInstance(self.parser.get_product_list(self.json)[1], Drink)
+        self.assertEqual(self.parser.get_product_list(self.json)[1].get_price(), Decimal("2.00"))
+
+    def test_get_address(self):
+        self.assertEqual(self.parser.get_address(self.json), "74 random street")
+
+    def test_get_order_no(self):
+        self.assertEqual(self.parser.get_order_no(self.json), 1)
+
+    def test_get_json(self):
+        new_json = self.parser.get_json([Pizza("small", ["Pepperoni"], "Custom"), Drink("Water")])
+        self.assertEqual(new_json["products"][0]["product_category"], "pizza")
+        self.assertEqual(new_json["products"][0]["size"], "SMALL")
+        self.assertEqual(new_json["products"][0]["type"], "CUSTOM")
+        self.assertEqual(new_json["products"][0]["toppings"], ["PEPPERONI"])
+
+
+class TestCsvParser(unittest.TestCase):
+    def setUp(self):
+        self.json = sample_json
+        self.parser = JsonParser()
+        setup_options()
+
+    def test_get_product_list(self):
+        self.assertIsInstance(self.parser.get_product_list(self.json)[0], Pizza)
+        self.assertEqual(self.parser.get_product_list(self.json)[0].get_price(), Decimal("8.99"))
+        self.assertIsInstance(self.parser.get_product_list(self.json)[1], Drink)
+        self.assertEqual(self.parser.get_product_list(self.json)[1].get_price(), Decimal("2.00"))
+
+    def test_get_address(self):
+        self.assertEqual(self.parser.get_address(self.json), "74 random street")
+
+    def test_get_order_no(self):
+        self.assertEqual(self.parser.get_order_no(self.json), 1)
+
+    def test_get_json(self):
+        new_json = self.parser.get_json([Pizza("small", ["Pepperoni"], "Custom"), Drink("Water")])
+        self.assertEqual(new_json["products"][0]["product_category"], "pizza")
+        self.assertEqual(new_json["products"][0]["size"], "SMALL")
+        self.assertEqual(new_json["products"][0]["type"], "CUSTOM")
+        self.assertEqual(new_json["products"][0]["toppings"], ["PEPPERONI"])
+
         

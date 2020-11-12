@@ -59,7 +59,7 @@ class Pizza(Product):
         topping option."""
         self.toppings = []  # Clear any previous choices
         for topping in toppings:
-            self.add_topping(topping)
+            self.add_topping(topping.upper())
 
     def get_size(self) -> str:
         """Return the pizza size as string."""

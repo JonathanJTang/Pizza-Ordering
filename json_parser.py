@@ -34,8 +34,8 @@ class JsonParser(OrderParser):
             product_dictionary = {}
             if isinstance(product, Pizza):
                 product_dictionary["product_category"] = "pizza"
-                product_dictionary["size"] = product.get_size()
-                product_dictionary["type"] = product.get_type()
+                product_dictionary["size"] = product.get_size().upper()
+                product_dictionary["type"] = product.get_type().upper()
                 product_dictionary["toppings"] = product.get_toppings()
             elif isinstance(product, Drink):
                 product_dictionary["product_category"] = "drink"
