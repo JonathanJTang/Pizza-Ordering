@@ -78,6 +78,10 @@ def main(context):
     context.obj = {"current_order": generate_base_order(),
                    "current_order_no": -1}
 
+def pretty_print_dictionary(dic):
+    for key, value in dic.items():
+        click.echo("{:13}:  ${}".format(key.title(), value))
+    click.echo()
 
 @main.command()
 @click.argument("item-name", type=click.STRING, nargs=-1, required=False)
@@ -89,11 +93,11 @@ def menu(item_name):
             if valid_response(response, expect_json=True):
                 json_response = response.json()
                 for category, sublist in json_response.items():
-                    click.echo("{}:".format(category.title()))
-                    click.echo(sublist)
+                    click.secho("{}:".format(category.title()), fg="blue", bold=True)
+                    pretty_print_dictionary(sublist)
         else:
             # Get price of one item
-            item_str = "_".join(item_name)
+            item_str = "_".join(item_name).lower()
             response = requests.get(
                 BASE_URL +
                 "/api/menu/" +
@@ -179,16 +183,16 @@ def echo_item(position, product):
         fg="blue",
         bg="white")
     if product["product_category"] == "drink":
-        click.secho(" {}".format(product["type"].lower()))
+        click.secho(" {}".format(product["type"].title()))
     elif product["product_category"] == "pizza":
         click.secho(
             " {} {} pizza".format(
-                product["size"].lower(),
-                product["type"].lower(),
+                product["size"].title(),
+                product["type"].title(),
             ), nl=False)
         if len(product["toppings"]) > 0:
             click.secho(" with additional {}".format(", ".join(
-                product["toppings"]).lower()), nl=False)
+                product["toppings"]).title()), nl=False)
         click.secho()
 
 
@@ -267,45 +271,51 @@ def submit(globals):
             "${}, and your order number is {}".format(
                 json_repsonse["total_price"],
                 order_no))
-        # Reset the order variable (can get order later through 'order edit')
+        # Reset the order variable after submitting the order
         globals["current_order"] = generate_base_order()
 
 
-def edit_pizza(selected_pizza):
-    """Interactively edit selected_pizza by prompting the user with possible
-    options."""
+def edit_pizza(selected_pizza, cart_item_id, changes):
+    """Interactively edit selected_pizza at item_no by prompting the user with
+    possible options, and record the new edits in changes."""
     edit_type = click.prompt(
         "Select an option to edit",
         type=click.Choice(("type", "size", "add_topping", "remove_topping"),
                           case_sensitive=False)).lower()
+    if cart_item_id not in changes:
+        changes[cart_item_id] = {"cart_item_id": cart_item_id}
     if edit_type == "type":
         new_type = click.prompt("Select an new pizza type",
                                 type=click.Choice(
                                     PIZZA_TYPE_OPTIONS,
                                     case_sensitive=False)).lower()
         selected_pizza["type"] = new_type
+        changes[cart_item_id]["type"] = new_type
     elif edit_type == "size":
         new_size = click.prompt("Select an new pizza size",
                                 type=click.Choice(
                                     PIZZA_SIZE_OPTIONS,
                                     case_sensitive=False)).lower()
         selected_pizza["size"] = new_size
+        changes[cart_item_id]["size"] = new_size
     elif edit_type == "add_topping":
         new_topping = click.prompt("Add a topping",
                                    type=click.Choice(
                                        PIZZA_TOPPINGS_OPTIONS,
                                        case_sensitive=False)).lower()
         selected_pizza["toppings"].append(new_topping)
+        changes[cart_item_id]["toppings"] = selected_pizza["toppings"]
     else:  # edit_type == "remove_topping"
         topping_to_delete = click.prompt(
             "Remove a topping",
             type=click.Choice(
-                [name.lower() for name in selected_pizza["toppings"]],
+                [name.title() for name in selected_pizza["toppings"]],
                 case_sensitive=False)).lower()
         for topping in selected_pizza["toppings"]:
             if topping.lower() == topping_to_delete:
                 selected_pizza["toppings"].remove(topping)
                 break
+        changes[cart_item_id]["toppings"] = selected_pizza["toppings"]
 
 
 def interactive_edit_order(globals, changes):
@@ -328,6 +338,7 @@ def interactive_edit_order(globals, changes):
     if item_no == 0:
         return False  # User is done editing the order
     selected_product = globals["current_order"]["products"][item_no - 1]
+    cart_item_id = selected_product.get("cart_item_id")
 
     # Determine which operation the user wishes to do
     operation = click.prompt(
@@ -335,8 +346,8 @@ def interactive_edit_order(globals, changes):
         type=click.Choice(("delete", "edit"), case_sensitive=False))
     if operation.lower() == "delete":
         globals["current_order"]["products"].pop(item_no - 1)
-        changes.append({"cart_item_id": selected_product.get("cart_item_id"),
-                        "remove": "remove"})
+        changes[cart_item_id] = {"cart_item_id": cart_item_id,
+                                 "remove": "remove"}
     else:  # the operation is 'edit'
         echo_item(item_no, selected_product)
         if selected_product["product_category"] == "drink":
@@ -346,18 +357,20 @@ def interactive_edit_order(globals, changes):
                     DRINK_TYPE_OPTIONS,
                     case_sensitive=False)).lower()
             selected_product["type"] = new_type
+            if cart_item_id not in changes:
+                changes[cart_item_id] = {"cart_item_id": cart_item_id}
+            changes[cart_item_id]["type"] = new_type
         elif selected_product["product_category"] == "pizza":
-            edit_pizza(selected_product)
-        change = {"cart_item_id": selected_product.get("cart_item_id")}
-        change.update(selected_product)
-        changes.append(change)
+            edit_pizza(selected_product, cart_item_id, changes)
 
     return True  # User is not yet done editing the order
 
 
-@order.command()
-@click.argument("order-number", type=click.IntRange(min=0), required=False)
-@click.pass_obj
+@ order.command()
+@ click.argument("order-number",
+                 type=click.IntRange(min=0),
+                 required=False)
+@ click.pass_obj
 def edit(globals, order_number):
     if order_number is not None:
         if len(
@@ -380,8 +393,12 @@ def edit(globals, order_number):
         except requests.exceptions.RequestException as exception:
             print(exception)
             return
+    else:
+        # Set temporary item id's to keep track of items between edits
+        for index, product in enumerate(globals["current_order"]["products"]):
+            product["cart_item_id"] = index + 1
 
-    changes = []
+    changes = {}
     while interactive_edit_order(globals, changes):
         pass  # repeatedly call interactive_edit_order until the user exits it
 
@@ -390,17 +407,27 @@ def edit(globals, order_number):
         print(changes)  # TODO: remove debug
         try:
             response = requests.patch(
-                BASE_URL + "/api/orders/" + str(order_number), json=changes)
+                BASE_URL +
+                "/api/orders/" +
+                str(order_number),
+                json=list(
+                    changes.values()))
             if not valid_response(response):
                 return
             click.echo(f"The price of the new order is ${response.text}")
         except requests.exceptions.RequestException as exception:
             print(exception)
             return
+        # Reset the order variable since it was retrieved from the server
+        globals["current_order"] = generate_base_order()
+    else:
+        # Remove temporary id's added earlier
+        for product in globals["current_order"]["products"]:
+            product.pop("cart_item_id", None)
 
 
-@order.command()
-@click.argument("order-number", type=click.IntRange(min=0))
+@ order.command()
+@ click.argument("order-number", type=click.IntRange(min=0))
 def cancel(order_number):
     # Get this order from the server
     try:
@@ -414,18 +441,6 @@ def cancel(order_number):
     except requests.exceptions.RequestException as exception:
         print(exception)
         return
-
-
-@main.command()
-def test():
-    # # click.clear()  # Run clear in terminal
-    # click.prompt("Please enter a valid integer", type=click.IntRange(min=1))
-    response = requests.get(BASE_URL + "/pizza")
-    # response = requests.get(BASE_URL + "/api/orders/create")
-    # response = requests.post('https://httpbin.org/post', data = {'key':'value'})
-    print(response.status_code)
-    print(response.text)
-    print(response.json())
 
 
 if __name__ == "__main__":
