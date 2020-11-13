@@ -1,0 +1,31 @@
+{
+  "type": "array",
+  "items": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "cart_item_id": { "type": "integer" },
+          "remove": { "type": "string" }
+        },
+        "required": ["cart_item_id", "remove"],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "cart_item_id": { "type": "integer" },
+          "product_category": {
+            "type": "string",
+            "pattern": "^(pizza|drink)$"
+          },
+          "type": { "type": "string" },
+          "size": { "type": "string" },
+          "toppings": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["cart_item_id"],
+        "additionalProperties": false
+      }
+    ]
+  }
+}

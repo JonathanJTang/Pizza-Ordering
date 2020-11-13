@@ -26,7 +26,7 @@ class JsonParser(OrderParser):
         return list_products
 
     def get_json(self, product_list: List[Tuple[int, Product]]) \
-                    -> Tuple[int, Dict[str, Any]]:
+            -> Tuple[int, Dict[str, Any]]:
         """Return a dictionary to be jsonified from product list."""
         json = {"products": []}
         for cart_item_id, product in product_list:
@@ -34,12 +34,13 @@ class JsonParser(OrderParser):
             product_dictionary["cart_item_id"] = cart_item_id
             if isinstance(product, Pizza):
                 product_dictionary["product_category"] = "pizza"
-                product_dictionary["size"] = product.get_size().upper()
-                product_dictionary["type"] = product.get_type().upper()
-                product_dictionary["toppings"] = product.get_toppings()
+                product_dictionary["size"] = product.get_size().lower()
+                product_dictionary["type"] = product.get_type().lower()
+                product_dictionary["toppings"] = [
+                    name.lower() for name in product.get_toppings()]
             elif isinstance(product, Drink):
                 product_dictionary["product_category"] = "drink"
-                product_dictionary["type"] = product.get_type()
+                product_dictionary["type"] = product.get_type().lower()
             json["products"].append(product_dictionary)
         return json
 

@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Dict, List, Union
+from typing import Dict
 
 from invalid_option_error import InvalidOptionError
 from product import Product
@@ -17,15 +17,16 @@ class Drink(Product):
         """ Returns the price of this Drink."""
         return self.type_to_price[self.type_]
 
-    def edit(self, changes: Dict[str, Union[str, List[str]]]) -> None:
+    def edit(self, changes: Dict[str, str]) -> None:
         """Edit this Drink with the changes specified in changes. If any of
-        the changes are invalid, raise the appropriate error."""
-        # Check for invalid variable types in this function; the corresponding
-        # setters check whether their values are valid
+        the changes are invalid, raise the appropriate error.
+        Precondition: changes is a dictionary with one key-value pair of type
+        str, where the key is 'type'.
+        """
+        # The corresponding setter checks whether the values are valid
         for option in changes:
-            if not isinstance(option, str):
-                raise InvalidOptionError(option, option_type="Drink edit")
-            if option.lower() == "type" and isinstance(changes[option], str):
+            if option.lower() == "type":
                 self.set_type(changes[option])
             else:
-                raise InvalidOptionError(option, option_type="Drink edit")
+                raise InvalidOptionError(
+                    Drink.__name__, option, option_type="Drink edit")

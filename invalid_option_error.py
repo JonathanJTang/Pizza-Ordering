@@ -1,8 +1,12 @@
 class InvalidOptionError(Exception):
     """ Exception that is raised when an invalid option is given."""
-    def __init__(self, option: str, option_type: str) -> None:
+
+    def __init__(self, containing_class_name: str, option: str,
+                 option_type: str) -> None:
+        self.containing_class_name = containing_class_name
         self.option = option
         self.option_type = option_type
 
     def __str__(self) -> str:
-        return f"'{self.option}' is not a valid {self.option_type} option"
+        return "'{}' is not a valid {} option for {}".format(
+            self.option, self.option_type, self.containing_class_name)

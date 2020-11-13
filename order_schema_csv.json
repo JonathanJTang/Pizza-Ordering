@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "data_format": { "type": "string", "pattern": "^csv$" },
+    "csv_string": { "type": "string" }
+  },
+  "required": ["data_format", "csv_string"],
+  "additionalProperties": false
+}

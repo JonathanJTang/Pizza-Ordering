@@ -22,7 +22,8 @@ class Product:
         """Set the type of this product as 'type_' (not case sensitive). Raise
         InvalidOptionError if 'type_' is not a valid type option."""
         if type_.upper() not in self.type_to_price:
-            raise InvalidOptionError(type_, option_type="type")
+            raise InvalidOptionError(
+                type(self).__name__, type_, option_type="type")
         self.type_ = type_.upper()  # use uppercase keys in these dictionaries
 
     def get_type(self) -> str:
