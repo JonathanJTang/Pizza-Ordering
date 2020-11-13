@@ -1,11 +1,13 @@
-from csv_parser import CsvParser
+import json
+
 from flask import Flask, jsonify, request
 from jsonschema import ValidationError, validate
 
-import data_formats
 import options
 from cart import Cart
+from csv_parser import CsvParser
 from drink import Drink
+from invalid_option_error import InvalidOptionError
 from json_parser import JsonParser
 from order import Order
 from pizza import Pizza
@@ -81,22 +83,28 @@ def replace_order(order_no):
                 "data_format") not in ("json_tree", "csv"):
             raise ValidationError("No valid JSON received")
         # Otherwise, we got a JSON object we can try to call validate() on
+        print(order_data)
         if order_data["data_format"] == "json_tree":
-            validate(order_data, data_formats.order_schema_json_tree)
+            validate(order_data, order_schema_json_tree)
             print("JSON validation success")
             for product in JsonParser().get_product_list(order_data):
                 order.get_cart().add_product(product)
         elif order_data["data_format"] == "csv":
-            validate(order_data, data_formats.order_schema_csv)
+            validate(order_data, order_schema_csv)
+            print("JSON CSV validation success")
             for product in CsvParser().get_product_list(
                     order_data["csv_string"]):
                 order.get_cart().add_product(product)
     except ValidationError as err:
-        print(err)
-        print("JSON validation failed")
+        # JSON payload not valid according to our JSON schema
+        print(err)  # TODO: remove DEBUG
         return "No valid JSON payload", 400
+    except InvalidOptionError as err:
+        # JSON payload contained an invalid product option
+        print(err)  # TODO: remove DEBUG
+        return "JSON payload contained invalid option for a product", 400
     except Exception as err:
-        print(err)
+        print(err)  # TODO: remove DEBUG
         return "An error occurred on the server", 500
     return jsonify({"total_price": order.get_cart().get_total_price()})
 
@@ -138,6 +146,14 @@ def get_menu_item_price(item):
 
 
 if __name__ == "__main__":
+    # Load json schemas
+    with open("edit_order_schema.json") as schema:
+        edit_order_schema = json.load(schema)
+    with open("order_schema_json.json") as schema:
+        order_schema_json_tree = json.load(schema)
+    with open("order_schema_csv.json") as schema:
+        order_schema_csv = json.load(schema)
+
     Drink.set_type_to_price(options.DRINK_TYPE_TO_PRICE)
     Pizza.set_type_to_price(options.PIZZA_TYPE_TO_PRICE)
     Pizza.set_size_to_price(options.PIZZA_SIZE_TO_PRICE)

@@ -1,0 +1,14 @@
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "cart_item_id": { "type": "integer" },
+      "type": { "type": "string" },
+      "size": { "type": "string" },
+      "toppings": { "type": "array", "items": { "type": "string" } }
+    },
+    "required": ["cart_item_id"],
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "type": "object",
+  "properties": {
+    "data_format": { "type": "string", "pattern": "^json_tree$" },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "product_category": {
+                "type": "string",
+                "pattern": "^pizza$"
+              },
+              "size": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "toppings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["product_category", "size", "type", "toppings"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "product_category": {
+                "type": "string",
+                "pattern": "^drink$"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "required": ["product_category", "type"],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "delivery_method": {
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "type": {
+              "type": "string",
+              "pattern": "^pickup$"
+            }
+          },
+          "required": ["type"]
+        },
+        {
+          "properties": {
+            "type": {
+              "type": "string",
+              "pattern": "^(pizzeria|uber_eats|foodora)$"
+            },
+            "details": {
+              "type": "object",
+              "properties": {
+                "address": { "type": "string" },
+                "order_no": { "type": "integer" }
+              },
+              "required": ["address"]
+            }
+          },
+          "required": ["type", "details"]
+        }
+      ]
+    }
+  },
+  "required": ["data_format", "products", "delivery_method"]
+}
