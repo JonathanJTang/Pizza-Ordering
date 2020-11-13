@@ -110,7 +110,8 @@ def menu(item_name):
 @main.group()
 @click.pass_obj
 def order(globals):
-    print("Previous globals: ", globals)
+    # print("Previous globals: ", globals)
+    pass
 
 
 @order.command()
@@ -142,13 +143,11 @@ def new(globals):
               )
 @click.pass_obj
 def pizza(globals, number, pizza_size, pizza_type, toppings):
-    print("pizza_size={}, pizza_type={}".format(pizza_size, pizza_type))
-    print("toppings={}, type={}".format(toppings, type(toppings)))
     pizza = {
         "product_category": "pizza",
-        "size": pizza_size,
-        "type": pizza_type,
-        "toppings": list(toppings)}
+        "size": pizza_size.lower(),
+        "type": pizza_type.lower(),
+        "toppings": [name.lower() for name in toppings]}
     for _ in range(number):
         globals["current_order"]["products"].append(pizza)
     print(globals["current_order"])  # TODO: remove DEBUG
@@ -165,31 +164,32 @@ def pizza(globals, number, pizza_size, pizza_type, toppings):
                 )
 @click.pass_obj
 def drink(globals, number, drink_type):
-    print("drink_type={}, type={}".format(drink_type, type(drink_type)))
     drink = {"product_category": "drink", "type": drink_type.lower()}
     for _ in range(number):
         globals["current_order"]["products"].append(drink)
     print(globals["current_order"])  # TODO: remove DEBUG
 
 
-def echo_order(current_order):
-    for index, product in enumerate(current_order["products"]):
-        # Number the products in the order starting from 1
+def echo_item(position, product):
+    """First item in the list has position 1."""
+    click.secho(
+        f"{position}.",
+        nl=False,
+        bold=True,
+        fg="blue",
+        bg="white")
+    if product["product_category"] == "drink":
+        click.secho(" {}".format(product["type"]))
+    elif product["product_category"] == "pizza":
         click.secho(
-            f"{index + 1}.",
-            nl=False,
-            bold=True,
-            fg="blue",
-            bg="white")
-        if product["product_category"] == "drink":
-            click.secho(" {}".format(product["type"]))
-        elif product["product_category"] == "pizza":
-            click.secho(
-                " {} {} pizza with additional {}".format(
-                    product["size"],
-                    product["type"],
-                    ",".join(
-                        product["toppings"])))
+            " {} {} pizza".format(
+                product["size"],
+                product["type"],
+            ), nl=False)
+        if len(product["toppings"]) > 0:
+            click.secho(" with additional {}".format(", ".join(
+                product["toppings"])), nl=False)
+        click.secho()
 
 
 def convert_to_csv(order_data):
@@ -200,7 +200,7 @@ def convert_to_csv(order_data):
         if item["product_category"] == "pizza":
             product_strings.append(
                 ",".join(("pizza", item["type"], item["size"],
-                         "|".join(item["toppings"]))))
+                          "|".join(item["toppings"]))))
         elif item["product_category"] == "drink":
             product_strings.append(",".join(("drink", item["type"], "")))
     delivery_string = ",".join(
@@ -213,14 +213,19 @@ def convert_to_csv(order_data):
 @order.command()
 @click.pass_obj
 def submit(globals):
+    # Don't allow empty orders to be submitted
+    if len(globals["current_order"]["products"]) == 0:
+        click.echo("Please add items to your order before submitting.")
+        return
+
     print(globals["current_order"])  # TODO: remove DEBUG
+    # Request an order number from server
     try:
         response = requests.post(BASE_URL + "/api/orders")
     except requests.exceptions.RequestException:
         click.echo("Sorry, we failed to connect to the pizzeria server. "
                    "Please try again later.")
         return
-
     if not valid_response(response):
         return
     order_no = int(response.text)
@@ -246,6 +251,7 @@ def submit(globals):
             globals["current_order"]["data_format"] = "csv"
             globals["current_order"]["csv_string"] = csv_string
 
+    # Send order information to server
     try:
         response = requests.put(
             BASE_URL + "/api/orders/" + str(order_no),
@@ -254,7 +260,6 @@ def submit(globals):
         click.echo("Sorry, we failed to connect to the pizzeria server. "
                    "Please try again later.")
         return
-
     if valid_response(response, expect_json=True):
         json_repsonse = response.json()
         click.secho(
@@ -262,9 +267,8 @@ def submit(globals):
             "${}, and your order number is {}".format(
                 json_repsonse["total_price"],
                 order_no))
-
-    # Reset the order variable (can get it in the future through 'order edit')
-    globals["current_order"] = generate_base_order()
+        # Reset the order variable (can get order later through 'order edit')
+        globals["current_order"] = generate_base_order()
 
 
 @order.command()
@@ -281,16 +285,44 @@ def edit(order_number):
             return
         selected_order = response.json()
         click.echo("Current order:")
-        echo_order(selected_order)
+        for index, product in enumerate(selected_order["products"]):
+            # Number the products in the order starting from 1
+            echo_item(index + 1, product)
     except requests.exceptions.RequestException as exception:
         print(exception)
         return
+
+    changes = []
+    # TODO: make this a while loop?
     item_no = click.prompt(
-        "Select an item to edit",
+        "Select an item to edit (enter its number in the list above)",
         type=click.IntRange(
             min=1,
             max=len(
                 selected_order["products"])))
+    selected_product = selected_order["products"][item_no - 1]
+    echo_item(item_no, selected_product)
+    if selected_product["product_category"] == "drink":
+        new_type = click.prompt(
+            "Select an new drink type",
+            type=click.Choice(DRINK_TYPE_OPTIONS, case_sensitive=False))
+        changes.append({"cart_item_id": selected_product["cart_item_id"],
+                        "type": new_type.lower()})
+    elif selected_product["product_category"] == "pizza":
+        pass
+        # TODO: complete
+
+    # TODO: Send changes as json payload in PATCH call
+    print(changes)
+    try:
+        response = requests.patch(
+            BASE_URL + "/api/orders/" + str(order_number), json=changes)
+        if not valid_response(response):
+            return
+        click.echo("Successfully edited order.")
+    except requests.exceptions.RequestException as exception:
+        print(exception)
+        return
 
 
 @order.command()

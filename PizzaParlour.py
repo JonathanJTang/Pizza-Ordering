@@ -64,9 +64,32 @@ def get_order(order_no):
 
 @app.route('/api/orders/<int:order_no>', methods=['PATCH'])
 def edit_order(order_no):
+    """Edit the order at order_no with the received data, where the data only
+    specifies the attributes that need to be changed."""
     if not valid_order_no(order_no):
         return "Not a valid order number", 404
     # TODO: complete edit_order
+    order = orders[order_no]
+    try:
+        edit_data = request.get_json(silent=True)
+        if edit_data is None:
+            raise ValidationError("No valid JSON received")
+        # Otherwise, we got a JSON object we can try to call validate() on
+        print(edit_data)
+        validate(edit_data, edit_order_schema)
+        print("JSON validation success")
+        # TODO: complete order editing functionality
+    except ValidationError as err:
+        # JSON payload not valid according to our JSON schema
+        print(err)  # TODO: remove DEBUG
+        return "No valid JSON payload", 400
+    except InvalidOptionError as err:
+        # JSON payload contained an invalid product option
+        print(err)  # TODO: remove DEBUG
+        return "JSON payload contained invalid option for a product", 400
+    except Exception as err:
+        print(err)  # TODO: remove DEBUG
+        return "An error occurred on the server", 500
     return "Successfully edited order {}".format(order_no)
 
 
@@ -83,7 +106,7 @@ def replace_order(order_no):
                 "data_format") not in ("json_tree", "csv"):
             raise ValidationError("No valid JSON received")
         # Otherwise, we got a JSON object we can try to call validate() on
-        print(order_data)
+        print(order_data)  # TODO: remove DEBUG
         if order_data["data_format"] == "json_tree":
             validate(order_data, order_schema_json_tree)
             print("JSON validation success")
