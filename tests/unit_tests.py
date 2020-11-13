@@ -2,6 +2,7 @@ import unittest
 from decimal import Decimal
 
 import options
+import PizzaParlour
 from cart import Cart
 from delivery_method import DeliveryMethod
 from drink import Drink
@@ -474,3 +475,33 @@ class TestCsvParser(unittest.TestCase):
     def test_get_order_no(self):
         self.assertEqual(self.parser.get_order_no(self.csv_string), 2)
 
+class TestPizzaParlour(unittest.TestCase):
+        def setUp(self):
+            setup_options()
+
+        def test_valid_order_no(self):
+            self.assertEqual(PizzaParlour.valid_order_no("#TODO"), "#TODO")
+
+        def test_welcome_pizza(self):
+            self.assertEqual(PizzaParlour.welcome_pizza(), "#TODO")
+
+        def test_create_order(self):
+            self.assertEqual(PizzaParlour.create_order(), "#TODO")
+
+        def test_get_order(self):
+            self.assertEqual(PizzaParlour.get_order(), "#TODO")
+
+        def test_edit_order(self):
+            self.assertEqual(PizzaParlour.edit_order(), "#TODO")
+
+        def replace_order(self):
+            self.assertEqual(PizzaParlour.replace_order(), "#TODO")
+
+        def cancel_order(self):
+            self.assertEqual(PizzaParlour.cancel_order(), "#TODO")
+
+        def test_get_full_menu(self):
+            self.assertEqual(PizzaParlour.get_full_menu(), "#TODO")
+
+        def test_get_menu_item_price(self):
+            self.assertEqual(PizzaParlour.get_menu_item_price(), "#TODO")
