@@ -21,6 +21,7 @@ from csv_parser import CsvParser
 
 # JSON data sample for Uber Eats
 sample_json = {
+    "data_format": "json_tree",
     "products": [
         {
             "product_category": "pizza",
@@ -44,6 +45,22 @@ sample_json = {
         }
     }
 }
+
+sample_edit_order_json = [
+    {
+        "cart_item_id": 1,
+        "size": "large"
+    },
+    {
+        "cart_item_id": 3,
+        "type": "coke"
+    },
+    {
+        "cart_item_id": 4,
+        "type": "pepperoni",
+        "toppings": ["olive"]
+    }
+]
 
 
 def setup_options():
@@ -99,11 +116,12 @@ class TestDrink(unittest.TestCase):
         self.assertEqual(self.drink.get_type(), "COKE")
 
     def test_edit_invalid_options(self):
-        self.assertRaises(InvalidOptionError, self.drink.edit, {1: "bla"})
-        self.assertRaises(InvalidOptionError, self.drink.edit, {"type": 0})
-        self.assertRaises(
-            InvalidOptionError, self.drink.edit, {
-                "type": "none"})
+        self.assertRaises(InvalidOptionError, self.drink.edit, {"bla": "bla"})
+        self.assertRaisesRegex(
+            InvalidOptionError,
+            "^'none' is not a valid type option for Drink$",
+            self.drink.edit,
+            {"type": "none"})
 
 
 class TestPizza(unittest.TestCase):
@@ -162,10 +180,11 @@ class TestPizza(unittest.TestCase):
         self.assertEqual(len(self.pizza.toppings), self.prev_toppings_len)
 
     def test_remove_invalid_topping(self):
-        self.assertRaisesRegex(InvalidOptionError,
-                               "'Blabla' is not a valid topping option",
-                               self.pizza.remove_topping,
-                               "Blabla")
+        self.assertRaisesRegex(
+            InvalidOptionError,
+            "^'Blabla' is not a valid topping option for Pizza$",
+            self.pizza.remove_topping,
+            "Blabla")
         self.assertEqual(len(self.pizza.toppings), self.prev_toppings_len)
 
     def test_get_price(self):
@@ -186,7 +205,6 @@ class TestPizza(unittest.TestCase):
                 "BEEF", "CHICKEN", "OLIVE"])
 
     def test_edit_invalid_options(self):
-        self.assertRaises(InvalidOptionError, self.pizza.edit, {1: "bla"})
         self.assertRaises(InvalidOptionError, self.pizza.edit, {"size": 1})
         self.assertRaises(InvalidOptionError, self.pizza.edit, {"type": 0})
         self.assertRaises(
@@ -249,7 +267,8 @@ class TestCart(unittest.TestCase):
         self.cart.add_product(Drink("Juice"))
         self.cart.add_product(Drink("Coke"))
         products = self.cart.get_products()
-        self.assertEqual(products[0][0], 1)  # Currently id indexing starts at 1
+        # Currently id indexing starts at 1
+        self.assertEqual(products[0][0], 1)
         self.assertEqual(products[0][1].get_type(), "JUICE")
         self.assertEqual(products[1][0], 2)
         self.assertEqual(products[1][1].get_type(), "COKE")
@@ -267,8 +286,10 @@ class TestOrder(unittest.TestCase):
     def test_initialize_order(self):
         self.assertEqual(self.order.order_no, 0)
         self.assertIsInstance(self.order.delivery_method, Pickup)
-        self.assertEqual(self.order.cart.get_products()[0][1].get_type(), "JUICE")
-        self.assertEqual(self.order.cart.get_products()[1][1].get_type(), "COKE")
+        self.assertEqual(self.order.cart.get_products()
+                         [0][1].get_type(), "JUICE")
+        self.assertEqual(self.order.cart.get_products()
+                         [1][1].get_type(), "COKE")
         self.assertEqual(len(self.order.cart.get_products()), 2)
         new_delivery_method = FoodoraDelivery("32 random")
         new_order = Order(3, self.cart, new_delivery_method)
@@ -475,33 +496,34 @@ class TestCsvParser(unittest.TestCase):
     def test_get_order_no(self):
         self.assertEqual(self.parser.get_order_no(self.csv_string), 2)
 
+
 class TestPizzaParlour(unittest.TestCase):
-        def setUp(self):
-            setup_options()
+    def setUp(self):
+        setup_options()
 
-        def test_valid_order_no(self):
-            self.assertEqual(PizzaParlour.valid_order_no("#TODO"), "#TODO")
+    def test_valid_order_no(self):
+        self.assertEqual(PizzaParlour.valid_order_no("#TODO"), "#TODO")
 
-        def test_welcome_pizza(self):
-            self.assertEqual(PizzaParlour.welcome_pizza(), "#TODO")
+    def test_welcome_pizza(self):
+        self.assertEqual(PizzaParlour.welcome_pizza(), "#TODO")
 
-        def test_create_order(self):
-            self.assertEqual(PizzaParlour.create_order(), "#TODO")
+    def test_create_order(self):
+        self.assertEqual(PizzaParlour.create_order(), "#TODO")
 
-        def test_get_order(self):
-            self.assertEqual(PizzaParlour.get_order(), "#TODO")
+    def test_get_order(self):
+        self.assertEqual(PizzaParlour.get_order(), "#TODO")
 
-        def test_edit_order(self):
-            self.assertEqual(PizzaParlour.edit_order(), "#TODO")
+    def test_edit_order(self):
+        self.assertEqual(PizzaParlour.edit_order(), "#TODO")
 
-        def replace_order(self):
-            self.assertEqual(PizzaParlour.replace_order(), "#TODO")
+    def replace_order(self):
+        self.assertEqual(PizzaParlour.replace_order(), "#TODO")
 
-        def cancel_order(self):
-            self.assertEqual(PizzaParlour.cancel_order(), "#TODO")
+    def cancel_order(self):
+        self.assertEqual(PizzaParlour.cancel_order(), "#TODO")
 
-        def test_get_full_menu(self):
-            self.assertEqual(PizzaParlour.get_full_menu(), "#TODO")
+    def test_get_full_menu(self):
+        self.assertEqual(PizzaParlour.get_full_menu(), "#TODO")
 
-        def test_get_menu_item_price(self):
-            self.assertEqual(PizzaParlour.get_menu_item_price(), "#TODO")
+    def test_get_menu_item_price(self):
+        self.assertEqual(PizzaParlour.get_menu_item_price(), "#TODO")
