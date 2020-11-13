@@ -65,7 +65,8 @@ def get_order(order_no):
 @app.route('/api/orders/<int:order_no>', methods=['PATCH'])
 def edit_order(order_no):
     """Edit the order at order_no with the received data, where the data only
-    specifies the attributes that need to be changed."""
+    specifies the attributes that need to be changed. Return the new total price
+    of the order."""
     if not valid_order_no(order_no):
         return "Not a valid order number", 404
     # TODO: complete edit_order
@@ -90,7 +91,7 @@ def edit_order(order_no):
     except Exception as err:
         print(err)  # TODO: remove DEBUG
         return "An error occurred on the server", 500
-    return "Successfully edited order {}".format(order_no)
+    return str(order.get_cart().get_total_price())
 
 
 @app.route('/api/orders/<int:order_no>', methods=['PUT'])
