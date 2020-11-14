@@ -79,7 +79,11 @@ def edit_order(order_no):
         print(edit_data)
         validate(edit_data, edit_order_schema)
         print("JSON validation success")
-        # TODO: complete order editing functionality
+        cart = order.get_cart()
+        for change in edit_data:
+            changes = change.copy()
+            changes.pop("cart_item_id")
+            cart.edit_product(change["cart_item_id"], changes)
     except ValidationError as err:
         # JSON payload not valid according to our JSON schema
         print(err)  # TODO: remove DEBUG
