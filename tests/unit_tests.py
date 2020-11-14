@@ -1,6 +1,9 @@
 import unittest
 from decimal import Decimal
 
+from pyrsistent import b
+
+from jsonschema import ValidationError
 import options
 import PizzaParlour
 from cart import Cart
@@ -18,6 +21,7 @@ from pizzeria_delivery import PizzeriaDelivery
 from product import Product
 from uber_eats_delivery import UberEatsDelivery
 from csv_parser import CsvParser
+from unittest.mock import patch
 
 # JSON data sample for Uber Eats
 sample_json = {
@@ -500,30 +504,61 @@ class TestCsvParser(unittest.TestCase):
 class TestPizzaParlour(unittest.TestCase):
     def setUp(self):
         setup_options()
+        self.app = app.test_client()
 
     def test_valid_order_no(self):
-        self.assertEqual(PizzaParlour.valid_order_no("#TODO"), "#TODO")
+        self.assertEqual(PizzaParlour.valid_order_no(0), False)
+        self.app.post('/api/orders')
+        self.assertEqual(PizzaParlour.valid_order_no(1), True)
 
     def test_welcome_pizza(self):
-        self.assertEqual(PizzaParlour.welcome_pizza(), "#TODO")
-
+        self.assertEqual(PizzaParlour.welcome_pizza(), 'Welcome to Pizza Planet!')
+       
     def test_create_order(self):
-        self.assertEqual(PizzaParlour.create_order(), "#TODO")
+        self.assertEqual(PizzaParlour.create_order(), "1")
+        self.assertEqual(PizzaParlour.next_order_no, 2)
+        order = PizzaParlour.orders[1]
+        self.assertEqual(len(order.get_cart().get_products()), 0)
 
     def test_get_order(self):
-        self.assertEqual(PizzaParlour.get_order(), "#TODO")
+        self.assertEqual(PizzaParlour.get_order(99), ("Not a valid order number", 404))
+        app.test_client().post('/api/orders')
+        self.assertEqual(PizzaParlour.get_order(1), {'products': []})
+
+    # def test_replace_order(self):
+    #     self.assertEqual(PizzaParlour.replace_order(), "#TODO") 
+
+    # def test_get_full_menu(self):
+    #     self.assertEqual(PizzaParlour.get_full_menu(), "TODO")
+
+    # def test_get_menu_item_price(self):
+    #     self.assertEqual(PizzaParlour.get_menu_item_price(), "#TODO")
+
+
+class TestPizzaParlourEditOrder(unittest.TestCase):   
+    def setUp(self):
+        setup_options()
+        self.app = app.test_client()
 
     def test_edit_order(self):
-        self.assertEqual(PizzaParlour.edit_order(), "#TODO")
+        self.assertEqual(PizzaParlour.edit_order(99), ("Not a valid order number", 404))
+        self.app.post('/api/orders')
+        response = self.app.get('/api/orders/1')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, b'{"products":[]}\n')
+        response = self.app.patch('/api/orders/1', json=sample_json)
+        self.assertEqual(PizzaParlour.edit_order(1), ("An error occurred on the server", 500))
+        response = self.app.patch('/api/orders/1', json=sample_edit_order_json)
+        self.assertEqual(response.data, b'0.00')
 
-    def replace_order(self):
-        self.assertEqual(PizzaParlour.replace_order(), "#TODO")
 
-    def cancel_order(self):
-        self.assertEqual(PizzaParlour.cancel_order(), "#TODO")
+class TestPizzaParlourCancelOrder(unittest.TestCase):   
+    def setUp(self):
+        setup_options()
+        self.app = app.test_client()
 
-    def test_get_full_menu(self):
-        self.assertEqual(PizzaParlour.get_full_menu(), "#TODO")
-
-    def test_get_menu_item_price(self):
-        self.assertEqual(PizzaParlour.get_menu_item_price(), "#TODO")
+    def test_cancel_order(self):
+        app.test_client().post('/api/orders')
+        self.assertEqual(PizzaParlour.cancel_order(99), ("Not a valid order number", 404))
+        response = self.app.delete('/api/orders/1')
+        self.assertEqual(response.data, b"Successfully deleted order 1")
