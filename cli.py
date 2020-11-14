@@ -37,6 +37,7 @@ DELIVERY_OPTIONS = ("Pickup",
 
 
 def generate_base_order():
+    """Return the order dictionary for an empty order."""
     base_order = {
         "products": [],
         "delivery_method": {
@@ -47,7 +48,53 @@ def generate_base_order():
     return base_order
 
 
+def convert_to_csv(order_data):
+    """Convert order_data (in JSON) to a CSV string in the format accepted by
+    PizzaParlour."""
+    product_strings = []
+    for item in order_data["products"]:
+        if item["product_category"] == "pizza":
+            product_strings.append(
+                ",".join(("pizza", item["type"], item["size"],
+                          "|".join(item["toppings"]))))
+        elif item["product_category"] == "drink":
+            product_strings.append(",".join(("drink", item["type"], "")))
+    delivery_string = ",".join(
+        (order_data["delivery_method"]["type"],
+         order_data["delivery_method"]["details"]["address"],
+         str(order_data["delivery_method"]["details"]["order_no"])))
+    return "\n".join(product_strings + [delivery_string])
+
+
+def pretty_print_dictionary(dic):
+    """Print a dictionary nicely to the terminal."""
+    for key, value in dic.items():
+        click.echo("{:13}:  ${}".format(key.title(), value))
+    click.echo()
+
+
+def echo_item(position, product):
+    """Output the given product to the terminal as part of a list of items. The
+    first item in the list has position 1."""
+    click.secho(f"{position}.", nl=False, bold=True, fg="blue", bg="white")
+    if product["product_category"] == "drink":
+        click.secho(" {}".format(product["type"].title()))
+    elif product["product_category"] == "pizza":
+        click.secho(
+            " {} {} pizza".format(
+                product["size"].title(),
+                product["type"].title(),
+            ), nl=False)
+        if len(product["toppings"]) > 0:
+            click.secho(" with additional {}".format(", ".join(
+                product["toppings"]).title()), nl=False)
+        click.secho()
+
+
 def valid_response(response, error_handler=None, expect_json=False):
+    """Return True iff response is valid under the given conditions. If response
+    has an invalid status code, call error_handler. If expect_json is True, also
+    check if the response has a JSON payload."""
     if response.status_code != 200:
         if error_handler is None:
             # Default error handler
@@ -71,21 +118,18 @@ def valid_response(response, error_handler=None, expect_json=False):
 @shell(intro="Pizzeria Command Line Ordering Interface", prompt="> ")
 @click.pass_context
 def main(context):
+    """Entry point to the CLI."""
     # Global variables:
     # current_order: the dictionary of the current order in progress
-    # current_order_no: the order number of the current order in progress
-    # (populated only after the order has been submitted)
-    context.obj = {"current_order": generate_base_order(),
-                   "current_order_no": -1}
+    context.obj = {"current_order": generate_base_order()}
 
-def pretty_print_dictionary(dic):
-    for key, value in dic.items():
-        click.echo("{:13}:  ${}".format(key.title(), value))
-    click.echo()
 
 @main.command()
 @click.argument("item-name", type=click.STRING, nargs=-1, required=False)
 def menu(item_name):
+    """Request the full menu or part of the menu from the server, and output the
+    results. If item_name is not given, output the whole menu; otherwise output
+    just the given item."""
     try:
         if len(item_name) == 0:
             # Print the full menu
@@ -93,7 +137,8 @@ def menu(item_name):
             if valid_response(response, expect_json=True):
                 json_response = response.json()
                 for category, sublist in json_response.items():
-                    click.secho("{}:".format(category.title()), fg="blue", bold=True)
+                    click.secho("{}:".format(category.title()),
+                                fg="blue", bold=True)
                     pretty_print_dictionary(sublist)
         else:
             # Get price of one item
@@ -105,7 +150,6 @@ def menu(item_name):
             if valid_response(response, error_handler=lambda res: click.echo(
                     "Error: {} is not a valid menu item".format(item_str))):
                 click.echo("{}: ${}".format(item_str, response.text.strip()))
-
     except Exception as exception:
         print(exception)
         return
@@ -114,13 +158,17 @@ def menu(item_name):
 @main.group()
 @click.pass_obj
 def order(globals):
-    # print("Previous globals: ", globals)
+    # Don't need to do anything for this function, since it's a command to group
+    # the other subcommands related to ordering
     pass
 
 
 @order.command()
 @click.pass_obj
 def new(globals):
+    """Create a new order and discard the previous one from memory; prompt the
+    user on whether to proceed if there is a previous incomplete order in
+    progress."""
     if len(globals["current_order"]["products"]) > 0 and not click.confirm(
         "Creating a new order will discard the previous order in progress, "
             "do you wish to proceed?"):
@@ -130,7 +178,7 @@ def new(globals):
 
 @order.command()
 @click.option("--number", "-n", required=False,
-              help="The number of this item you would like to order.",
+              help="The number of pizzas of this type to order.",
               type=click.IntRange(min=1),
               default=1
               )
@@ -141,12 +189,13 @@ def new(globals):
                 type=click.Choice(PIZZA_TYPE_OPTIONS, case_sensitive=False)
                 )
 @click.option("--toppings", "-t", required=False,
-              help="Enter the toppings you would like",
+              help="The topping(s) you would like (one topping per -t option)",
               type=click.Choice(PIZZA_TOPPINGS_OPTIONS, case_sensitive=False),
               multiple=True
               )
 @click.pass_obj
 def pizza(globals, number, pizza_size, pizza_type, toppings):
+    """Order a pizza with the given pizza_size, pizza_type, and toppings."""
     pizza = {
         "product_category": "pizza",
         "size": pizza_size.lower(),
@@ -154,12 +203,11 @@ def pizza(globals, number, pizza_size, pizza_type, toppings):
         "toppings": [name.lower() for name in toppings]}
     for _ in range(number):
         globals["current_order"]["products"].append(pizza)
-    print(globals["current_order"])  # TODO: remove DEBUG
 
 
 @order.command()
 @click.option("--number", "-n", required=False,
-              help="The number of this item you would like to order.",
+              help="The number of drinks of this type to order.",
               type=click.IntRange(min=1),
               default=1
               )
@@ -168,61 +216,22 @@ def pizza(globals, number, pizza_size, pizza_type, toppings):
                 )
 @click.pass_obj
 def drink(globals, number, drink_type):
+    """Order a drink with the given drink_type."""
     drink = {"product_category": "drink", "type": drink_type.lower()}
     for _ in range(number):
         globals["current_order"]["products"].append(drink)
-    print(globals["current_order"])  # TODO: remove DEBUG
-
-
-def echo_item(position, product):
-    """First item in the list has position 1."""
-    click.secho(
-        f"{position}.",
-        nl=False,
-        bold=True,
-        fg="blue",
-        bg="white")
-    if product["product_category"] == "drink":
-        click.secho(" {}".format(product["type"].title()))
-    elif product["product_category"] == "pizza":
-        click.secho(
-            " {} {} pizza".format(
-                product["size"].title(),
-                product["type"].title(),
-            ), nl=False)
-        if len(product["toppings"]) > 0:
-            click.secho(" with additional {}".format(", ".join(
-                product["toppings"]).title()), nl=False)
-        click.secho()
-
-
-def convert_to_csv(order_data):
-    """Convert order_data (in JSON) to a CSV string in the format accepted by
-    PizzaParlour."""
-    product_strings = []
-    for item in order_data["products"]:
-        if item["product_category"] == "pizza":
-            product_strings.append(
-                ",".join(("pizza", item["type"], item["size"],
-                          "|".join(item["toppings"]))))
-        elif item["product_category"] == "drink":
-            product_strings.append(",".join(("drink", item["type"], "")))
-    delivery_string = ",".join(
-        (order_data["delivery_method"]["type"],
-         order_data["delivery_method"]["details"]["address"],
-         str(order_data["delivery_method"]["details"]["order_no"])))
-    return "\n".join(product_strings + [delivery_string])
 
 
 @order.command()
 @click.pass_obj
 def submit(globals):
+    """Submit the current order in progress, prompting the user for a
+    pickup/delivery method."""
     # Don't allow empty orders to be submitted
     if len(globals["current_order"]["products"]) == 0:
         click.echo("Please add items to your order before submitting.")
         return
 
-    print(globals["current_order"])  # TODO: remove DEBUG
     # Request an order number from server
     try:
         response = requests.post(BASE_URL + "/api/orders")
@@ -233,7 +242,6 @@ def submit(globals):
     if not valid_response(response):
         return
     order_no = int(response.text)
-    print("Got order_no of {}".format(order_no))  # TODO: remove DEBUG
 
     # Get the delivery type
     delivery_option = click.prompt(
@@ -250,7 +258,6 @@ def submit(globals):
             "address": address, "order_no": order_no}
         if (delivery_option == "foodora"):
             csv_string = convert_to_csv(globals["current_order"])
-            print(repr(csv_string))  # TODO: remove DEBUG
             globals["current_order"].clear()
             globals["current_order"]["data_format"] = "csv"
             globals["current_order"]["csv_string"] = csv_string
@@ -285,14 +292,14 @@ def edit_pizza(selected_pizza, cart_item_id, changes):
     if cart_item_id not in changes:
         changes[cart_item_id] = {"cart_item_id": cart_item_id}
     if edit_type == "type":
-        new_type = click.prompt("Select an new pizza type",
+        new_type = click.prompt("Select a new pizza type",
                                 type=click.Choice(
                                     PIZZA_TYPE_OPTIONS,
                                     case_sensitive=False)).lower()
         selected_pizza["type"] = new_type
         changes[cart_item_id]["type"] = new_type
     elif edit_type == "size":
-        new_size = click.prompt("Select an new pizza size",
+        new_size = click.prompt("Select a new pizza size",
                                 type=click.Choice(
                                     PIZZA_SIZE_OPTIONS,
                                     case_sensitive=False)).lower()
@@ -352,7 +359,7 @@ def interactive_edit_order(globals, changes):
         echo_item(item_no, selected_product)
         if selected_product["product_category"] == "drink":
             new_type = click.prompt(
-                "Select an new drink type",
+                "Select a new drink type",
                 type=click.Choice(
                     DRINK_TYPE_OPTIONS,
                     case_sensitive=False)).lower()
@@ -366,12 +373,14 @@ def interactive_edit_order(globals, changes):
     return True  # User is not yet done editing the order
 
 
-@ order.command()
-@ click.argument("order-number",
-                 type=click.IntRange(min=0),
-                 required=False)
-@ click.pass_obj
+@order.command()
+@click.argument("order-number",
+                type=click.IntRange(min=0),
+                required=False)
+@click.pass_obj
 def edit(globals, order_number):
+    """If order_number is given, edit the submitted order with the given
+    order_number. Otherwise, edit the current order in progress."""
     if order_number is not None:
         if len(
             globals["current_order"]["products"]) > 0 and not click.confirm(
@@ -426,9 +435,10 @@ def edit(globals, order_number):
             product.pop("cart_item_id", None)
 
 
-@ order.command()
-@ click.argument("order-number", type=click.IntRange(min=0))
+@order.command()
+@click.argument("order-number", type=click.IntRange(min=0))
 def cancel(order_number):
+    """Cancel a submitted order with the given order_number."""
     # Get this order from the server
     try:
         response = requests.delete(
