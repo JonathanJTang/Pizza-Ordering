@@ -34,5 +34,6 @@ Pair programming was slower than working separately, and it sometimes felt like 
 
 
 ## Design patterns used:
-Abstract superclass for products and delivery detail parsers
-Dependency injection in Order class
+Superclass Product for Pizza and Drink classes; consolidates shared code and is easily extensible.
+DeliveryMethod is an abstract superclass for the other delivery methods (Pickup, PizzeriaDelivery, UberEatsDelivery, FoodoraDelivery)
+Dependency injection in Order class (for the cart and delivery method fields); Order class is similar to a Facade.
