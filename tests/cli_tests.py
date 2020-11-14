@@ -1,8 +1,9 @@
 import unittest
+from unittest.mock import patch
 
 import cli
+import click
 from click.testing import CliRunner
-
 
 base_order = {
     "products": [],
@@ -54,37 +55,64 @@ class TestCli(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_no_crash(self):
-        """Works when Flask server is already running."""
+    @patch("cli.requests.get")
+    def test_valid_full_menu(self, mock_get):
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json = lambda: {
+            "Part A": {"Item 1": 1.00, "Item 2": 1.99}}
         runner = CliRunner()
         result = runner.invoke(cli.menu)
         self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(cli.menu, args=["item"])
+        self.assertEqual(
+            result.output,
+            "Part A:\nItem 1       :  $1.0\nItem 2       :  $1.99\n\n")
+
+    @patch("cli.requests.get")
+    def test_valid_menu_item(self, mock_get):
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.text = "1.00"
+        result = CliRunner().invoke(cli.menu, args=["random_item"])
         self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(cli.order)
+        self.assertEqual(result.output, "random_item: $1.00\n")
+
+    @patch("cli.requests.get")
+    def test_invalid_menu_item(self, mock_get):
+        mock_get.return_value.status_code = 400
+        mock_get.return_value.text = "Error text"
+        result = CliRunner().invoke(cli.menu, args=["random_item"])
         self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(
-            cli.order, args=["new"], obj={"current_order": base_order})
-        self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(
+        self.assertEqual(
+            result.output,
+            "Error: random_item is not a valid menu item\n")
+
+    def test_add_pizza_and_drink(self):
+        expected = {"products": [{
+                "product_category": "pizza",
+                "size": "small",
+                "type": "custom",
+                "toppings": [
+                    "olive",
+                ]
+            },
+            {
+                "product_category": "drink",
+                "type": "coke",
+            },
+        ],
+            "delivery_method": {
+                "type": "pickup",
+                "details": {}
+            }
+        }
+        context = {"current_order": base_order}
+        result = CliRunner().invoke(
             cli.order,
             args=["pizza", "small", "custom", "-t", "olive"],
-            obj={"current_order": base_order})
+            obj=context)
         self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(cli.order, args=["drink", "coke"],
-                               obj={"current_order": base_order})
+        result = CliRunner().invoke(
+            cli.order,
+            args=["drink", "coke"],
+            obj=context)
         self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(cli.order, args=["edit"],
-                               obj={"current_order": base_order},
-                               input="0\n")
-        self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(cli.order, args=["edit", "1"],
-                               obj={"current_order": base_order},
-                               input="0\n")
-        self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(cli.order, args=["submit"],
-                               obj={"current_order": base_order},
-                               input="pickup\n")
-        self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(cli.order, args=["cancel", "1"])
-        self.assertTrue(result.exit_code == 0 and not result.exception)
+        self.assertEqual(context["current_order"], expected)

@@ -83,7 +83,10 @@ def edit_order(order_no):
         cart = order.get_cart()
         for change in edit_data:
             cart_item_id = change.pop("cart_item_id")
-            cart.edit_product(cart_item_id, change)
+            if change.pop("remove", None) is None:
+                cart.edit_product(cart_item_id, change)
+            else:
+                cart.remove_product(cart_item_id)
     except ValidationError as err:
         # JSON payload not valid according to our JSON schema
         print(err)
