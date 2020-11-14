@@ -14,7 +14,8 @@ from pizza import Pizza
 
 app = Flask("Assignment 2")
 
-# orders is a dictionary that will hold all the orders receieved in this session
+# orders is a dictionary that will hold all the orders receieved in this
+# session
 orders = {}
 # next_order_no keeps track of the next order number to assign for a new order
 next_order_no = 1
@@ -34,19 +35,10 @@ def valid_order_no(order_no):
     return order_no in orders
 
 
-@app.route('/pizza', methods=["GET", "POST"])
+@app.route('/pizza', methods=["GET"])
 def welcome_pizza():
-    """ We will put order to server or get the current order from server
-    in order to modify it."""
-    try:
-        if request.method == "GET":  # We want to change
-            print("Got GET request")
-            request.args.get("name")
-        elif request.method == "POST":
-            print("Got POST request")
-            # request.files.
-    except Exception:
-        pass  # fail silently for now
+    """Initial entry point: start with a welcome message!
+    Use the other routes for actual functionality."""
     return 'Welcome to Pizza Planet!'
 
 
@@ -79,7 +71,6 @@ def edit_order(order_no):
     of the order."""
     if not valid_order_no(order_no):
         return "Not a valid order number", 404
-    # TODO: complete edit_order
     order = orders[order_no]
     try:
         edit_data = request.get_json(silent=True)
@@ -91,19 +82,18 @@ def edit_order(order_no):
         print("JSON validation success")
         cart = order.get_cart()
         for change in edit_data:
-            changes = change.copy()
-            changes.pop("cart_item_id")
-            cart.edit_product(change["cart_item_id"], changes)
+            cart_item_id = change.pop("cart_item_id")
+            cart.edit_product(cart_item_id, change)
     except ValidationError as err:
         # JSON payload not valid according to our JSON schema
-        print(err)  # TODO: remove DEBUG
+        print(err)
         return "No valid JSON payload", 400
     except InvalidOptionError as err:
         # JSON payload contained an invalid product option
-        print(err)  # TODO: remove DEBUG
+        print(err)
         return "JSON payload contained invalid option for a product", 400
     except Exception as err:
-        print(err)  # TODO: remove DEBUG
+        print(err)
         return "An error occurred on the server", 500
     return str(order.get_cart().get_total_price())
 
@@ -121,28 +111,25 @@ def replace_order(order_no):
                 "data_format") not in ("json_tree", "csv"):
             raise ValidationError("No valid JSON received")
         # Otherwise, we got a JSON object we can try to call validate() on
-        print(order_data)  # TODO: remove DEBUG
         if order_data["data_format"] == "json_tree":
             validate(order_data, order_schema_json_tree)
-            print("JSON validation success")
             for product in JsonParser().get_product_list(order_data):
                 order.get_cart().add_product(product)
         elif order_data["data_format"] == "csv":
             validate(order_data, order_schema_csv)
-            print("JSON CSV validation success")
             for product in CsvParser().get_product_list(
                     order_data["csv_string"]):
                 order.get_cart().add_product(product)
     except ValidationError as err:
         # JSON payload not valid according to our JSON schema
-        print(err)  # TODO: remove DEBUG
+        print(err)
         return "No valid JSON payload", 400
     except InvalidOptionError as err:
         # JSON payload contained an invalid product option
-        print(err)  # TODO: remove DEBUG
+        print(err)
         return "JSON payload contained invalid option for a product", 400
     except Exception as err:
-        print(err)  # TODO: remove DEBUG
+        print(err)
         return "An error occurred on the server", 500
     return jsonify({"total_price": order.get_cart().get_total_price()})
 
