@@ -17,8 +17,8 @@ We used `autopep8` for code formatting, organized imports in VS Code, and used `
 - `order pizza [size] [type] [-t [topping]] [-t [topping]]` adds a pizza of the given size, type, and toppings to the order. (run `order pizza --help` for valid options; use one `-t` option for each topping.)
 - `order edit` can be used to edit the current order (follow the prompts to delete or edit items)
 - `order submit` submits the order to the server; follow the prompts to select pickup/delivery option; at the end the assigned order number and the total price of the order is displayed (the order number is ).
-- `order edit [order_no]` can be used to edit a submitted order (follow the prompts to delete or edit items)
-- `order cancel [order_no]` cancels a submitted order.
+- `order edit [order number]` can be used to edit a submitted order (follow the prompts to delete or edit items)
+- `order cancel [order number]` cancels a submitted order.
 - `order menu` displays the full menu.
 - `order menu [item]` displays the price of the given menu item.
 

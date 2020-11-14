@@ -452,9 +452,9 @@ class TestJsonParser(unittest.TestCase):
             [(1, Pizza("small", ["Pepperoni"], "Custom")), (3, Drink("Water"))])
         self.assertEqual(new_json["products"][0]["cart_item_id"], 1)
         self.assertEqual(new_json["products"][0]["product_category"], "pizza")
-        self.assertEqual(new_json["products"][0]["size"], "SMALL")
-        self.assertEqual(new_json["products"][0]["type"], "CUSTOM")
-        self.assertEqual(new_json["products"][0]["toppings"], ["PEPPERONI"])
+        self.assertEqual(new_json["products"][0]["size"], "small")
+        self.assertEqual(new_json["products"][0]["type"], "custom")
+        self.assertEqual(new_json["products"][0]["toppings"], ["pepperoni"])
 
 
 class TestCsvParser(unittest.TestCase):

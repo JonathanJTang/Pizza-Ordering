@@ -14,8 +14,18 @@ from pizza import Pizza
 
 app = Flask("Assignment 2")
 
+# orders is a dictionary that will hold all the orders receieved in this session
 orders = {}
+# next_order_no keeps track of the next order number to assign for a new order
 next_order_no = 1
+
+# Load json schemas
+with open("edit_order_schema.json") as schema:
+    edit_order_schema = json.load(schema)
+with open("order_schema_json.json") as schema:
+    order_schema_json_tree = json.load(schema)
+with open("order_schema_csv.json") as schema:
+    order_schema_csv = json.load(schema)
 
 
 def valid_order_no(order_no):
@@ -170,16 +180,10 @@ def get_menu_item_price(item):
 
 
 if __name__ == "__main__":
-    # Load json schemas
-    with open("edit_order_schema.json") as schema:
-        edit_order_schema = json.load(schema)
-    with open("order_schema_json.json") as schema:
-        order_schema_json_tree = json.load(schema)
-    with open("order_schema_csv.json") as schema:
-        order_schema_csv = json.load(schema)
-
+    # Set options
     Drink.set_type_to_price(options.DRINK_TYPE_TO_PRICE)
     Pizza.set_type_to_price(options.PIZZA_TYPE_TO_PRICE)
     Pizza.set_size_to_price(options.PIZZA_SIZE_TO_PRICE)
     Pizza.set_topping_to_price(options.PIZZA_TOPPING_TO_PRICE)
+
     app.run()
