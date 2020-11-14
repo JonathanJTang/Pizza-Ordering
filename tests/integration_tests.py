@@ -1,17 +1,13 @@
 import json
 import unittest
-from decimal import Decimal
 from unittest.mock import patch
 
 import cli
 import options
-from cart import Cart
 from click.testing import CliRunner
 from drink import Drink
-from invalid_option_error import InvalidOptionError
 from pizza import Pizza
 from PizzaParlour import app
-from product import Product
 
 
 base_order = {
@@ -68,10 +64,6 @@ class TestIntegration(unittest.TestCase):
         response = self.app.get("/pizza")
         self.assertEqual(response.status_code, 200)
 
-    # def test_create_order(self):
-    #     unittest.mock.create_autospec()
-
-    # @patch('PizzaParlour.order_schema_json_tree', order_schema_json_tree)
     def test_add_order(self):
         response = self.app.post("/api/orders")
         self.assertEqual(response.status_code, 200)
@@ -136,13 +128,14 @@ class TestIntegration(unittest.TestCase):
     @patch("cli.requests.patch")
     @patch("cli.requests.get")
     def test_edit_previous_order(self, mock_get, mock_patch):
+        input_str = "1\nedit\nsize\nlarge\n1\nedit\ntype\npepperoni\n2\nedit\npepsi\n2\ndelete\n1\nedit\nadd_topping\nolive\n1\nedit\nremove_topping\nbacon\n0\n"
         mock_get.return_value.status_code = 200
         mock_get.return_value.json = lambda: {"products": [
             {
                 'cart_item_id': 1,
                 'product_category': 'pizza',
                 'size': 'small',
-                'toppings': [],
+                'toppings': ['bacon'],
                 'type': 'custom'},
             {
                 'cart_item_id': 2,
@@ -151,7 +144,7 @@ class TestIntegration(unittest.TestCase):
         mock_patch.return_value.status_code = 200
         mock_patch.return_value.text = "12.34"
         result = CliRunner().invoke(cli.order, args=["edit", "1"],
-                               obj={"current_order": base_order},
-                               input="1\nedit\nsize\nlarge\n2\ndelete\n0\n")
+                                    obj={"current_order": base_order},
+                                    input=input_str)
         self.assertTrue(result.exit_code == 0 and not result.exception)
         self.assertIn("The price of the new order is $12.34", result.output)
