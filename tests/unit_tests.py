@@ -1,12 +1,11 @@
 import unittest
 from decimal import Decimal
+from unittest.mock import patch
 
-from pyrsistent import b
-
-from jsonschema import ValidationError
 import options
 import PizzaParlour
 from cart import Cart
+from csv_parser import CsvParser
 from delivery_method import DeliveryMethod
 from drink import Drink
 from foodora_delivery import FoodoraDelivery
@@ -20,8 +19,6 @@ from PizzaParlour import app
 from pizzeria_delivery import PizzeriaDelivery
 from product import Product
 from uber_eats_delivery import UberEatsDelivery
-from csv_parser import CsvParser
-from unittest.mock import patch
 
 # JSON data sample for Uber Eats
 sample_json = {
@@ -72,13 +69,6 @@ def setup_options():
     Pizza.set_size_to_price(options.PIZZA_SIZE_TO_PRICE)
     Pizza.set_type_to_price(options.PIZZA_TYPE_TO_PRICE)
     Drink.set_type_to_price(options.DRINK_TYPE_TO_PRICE)
-
-
-def test_pizza():
-    response = app.test_client().get('/pizza')
-
-    assert response.status_code == 200
-    assert response.data == b'Welcome to Pizza Planet!'
 
 
 class TestProduct(unittest.TestCase):
@@ -506,27 +496,34 @@ class TestPizzaParlour(unittest.TestCase):
         setup_options()
         self.app = app.test_client()
 
+    @patch.dict("PizzaParlour.orders", {}, clear=True)
+    @patch("PizzaParlour.next_order_no", 1)
     def test_valid_order_no(self):
         self.assertEqual(PizzaParlour.valid_order_no(0), False)
         self.app.post('/api/orders')
         self.assertEqual(PizzaParlour.valid_order_no(1), True)
 
-    def test_welcome_pizza(self):
-        self.assertEqual(PizzaParlour.welcome_pizza(), 'Welcome to Pizza Planet!')
-       
+    @patch.dict("PizzaParlour.orders", {}, clear=True)
+    @patch("PizzaParlour.next_order_no", 1)
     def test_create_order(self):
-        self.assertEqual(PizzaParlour.create_order(), "1")
-        self.assertEqual(PizzaParlour.next_order_no, 2)
-        order = PizzaParlour.orders[1]
+        prev_next_order_no = PizzaParlour.next_order_no
+        self.assertEqual(PizzaParlour.create_order(), str(prev_next_order_no))
+        self.assertEqual(PizzaParlour.next_order_no, prev_next_order_no + 1)
+        order = PizzaParlour.orders[prev_next_order_no]
         self.assertEqual(len(order.get_cart().get_products()), 0)
 
+    @patch.dict("PizzaParlour.orders", {}, clear=True)
+    @patch("PizzaParlour.next_order_no", 1)
     def test_get_order(self):
-        self.assertEqual(PizzaParlour.get_order(99), ("Not a valid order number", 404))
-        app.test_client().post('/api/orders')
-        self.assertEqual(PizzaParlour.get_order(1), {'products': []})
+        self.assertEqual(PizzaParlour.get_order(
+            99), ("Not a valid order number", 404))
+        response = self.app.post('/api/orders')
+        response = self.app.get(f"/api/orders/{int(response.data)}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {'products': []})
 
     # def test_replace_order(self):
-    #     self.assertEqual(PizzaParlour.replace_order(), "#TODO") 
+    #     self.assertEqual(PizzaParlour.replace_order(), "#TODO")
 
     # def test_get_full_menu(self):
     #     self.assertEqual(PizzaParlour.get_full_menu(), "TODO")
@@ -535,30 +532,44 @@ class TestPizzaParlour(unittest.TestCase):
     #     self.assertEqual(PizzaParlour.get_menu_item_price(), "#TODO")
 
 
-class TestPizzaParlourEditOrder(unittest.TestCase):   
+class TestPizzaParlourEditOrder(unittest.TestCase):
     def setUp(self):
         setup_options()
         self.app = app.test_client()
 
+    @patch.dict("PizzaParlour.orders", {}, clear=True)
+    @patch("PizzaParlour.next_order_no", 1)
     def test_edit_order(self):
-        self.assertEqual(PizzaParlour.edit_order(99), ("Not a valid order number", 404))
-        self.app.post('/api/orders')
-        response = self.app.get('/api/orders/1')
+        self.assertEqual(PizzaParlour.edit_order(
+            99), ("Not a valid order number", 404))
+        response = self.app.post('/api/orders')
+        order_no = int(response.data)
+        response = self.app.get(f'/api/orders/{order_no}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, b'{"products":[]}\n')
-        response = self.app.patch('/api/orders/1', json=sample_json)
-        self.assertEqual(PizzaParlour.edit_order(1), ("An error occurred on the server", 500))
-        response = self.app.patch('/api/orders/1', json=sample_edit_order_json)
+        response = self.app.patch(f'/api/orders/{order_no}', json=sample_json)
+        self.assertEqual(PizzaParlour.edit_order(order_no),
+                         ("An error occurred on the server", 500))
+        response = self.app.patch(
+            f'/api/orders/{order_no}',
+            json=sample_edit_order_json)
         self.assertEqual(response.data, b'0.00')
 
 
-class TestPizzaParlourCancelOrder(unittest.TestCase):   
+class TestPizzaParlourCancelOrder(unittest.TestCase):
     def setUp(self):
         setup_options()
         self.app = app.test_client()
 
+    @patch.dict("PizzaParlour.orders", {}, clear=True)
+    @patch("PizzaParlour.next_order_no", 1)
     def test_cancel_order(self):
-        app.test_client().post('/api/orders')
-        self.assertEqual(PizzaParlour.cancel_order(99), ("Not a valid order number", 404))
-        response = self.app.delete('/api/orders/1')
-        self.assertEqual(response.data, b"Successfully deleted order 1")
+        response = self.app.post('/api/orders')
+        order_no = int(response.data)
+        self.assertEqual(PizzaParlour.cancel_order(
+            99), ("Not a valid order number", 404))
+        response = self.app.delete(f'/api/orders/{order_no}')
+        self.assertEqual(
+            response.data,
+            b"Successfully deleted order %d" %
+            order_no)

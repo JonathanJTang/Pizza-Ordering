@@ -60,10 +60,6 @@ class TestIntegration(unittest.TestCase):
         app.testing = True
         self.app = app.test_client()
 
-    def test_request(self):
-        response = self.app.get("/pizza")
-        self.assertEqual(response.status_code, 200)
-
     def test_add_order(self):
         response = self.app.post("/api/orders")
         self.assertEqual(response.status_code, 200)
@@ -88,7 +84,7 @@ class TestIntegration(unittest.TestCase):
         self.assertTrue(result.exit_code == 0 and not result.exception)
         result = runner.invoke(cli.menu)
         self.assertTrue(result.exit_code == 0 and not result.exception)
-        result = runner.invoke(cli.menu, args=["item"])
+        result = runner.invoke(cli.menu, args=["coke"])
         self.assertTrue(result.exit_code == 0 and not result.exception)
         result = runner.invoke(cli.order)
         self.assertTrue(result.exit_code == 0 and not result.exception)
@@ -116,7 +112,7 @@ class TestIntegration(unittest.TestCase):
                                obj={"current_order": base_order},
                                input="foodora\n27 random street\n")
         self.assertTrue(result.exit_code == 0 and not result.exception)
-        self.assertIn("Your order has been sucessfully submitted. " +
+        self.assertIn("Your order has been successfully submitted. " +
                       "The total price is " +
                       "$6.78, and your order number is 1", result.output)
 

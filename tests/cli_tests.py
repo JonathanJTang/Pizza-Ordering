@@ -5,14 +5,6 @@ import cli
 import click
 from click.testing import CliRunner
 
-base_order = {
-    "products": [],
-    "delivery_method": {
-        "type": "pickup",
-        "details": {}
-    }
-}
-
 order_data = {
     "data_format": "csv",
     "products": [
@@ -99,6 +91,14 @@ class TestCli(unittest.TestCase):
                 "type": "coke",
             },
         ],
+            "delivery_method": {
+                "type": "pickup",
+                "details": {}
+            }
+        }
+        
+        base_order = {
+            "products": [],
             "delivery_method": {
                 "type": "pickup",
                 "details": {}
