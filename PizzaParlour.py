@@ -14,7 +14,7 @@ from pizza import Pizza
 
 app = Flask("Assignment 2")
 
-# orders is a dictionary that will hold all the orders receieved in this
+# orders is a dictionary that will hold all the orders received in this
 # session
 orders = {}
 # next_order_no keeps track of the next order number to assign for a new order
@@ -33,14 +33,6 @@ def valid_order_no(order_no):
     """Return True iff order_no is a valid order number, ie the order number of
     an order placed in this session of the server."""
     return order_no in orders
-
-
-@app.route('/pizza', methods=["GET"])
-def welcome_pizza():
-    """Initial entry point: start with a welcome message!
-    Use the other routes for actual functionality."""
-    return 'Welcome to Pizza Planet!'
-
 
 @app.route('/api/orders', methods=["POST"])
 def create_order():

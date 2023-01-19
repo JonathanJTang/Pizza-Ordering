@@ -272,11 +272,11 @@ def submit(globals):
                    "Please try again later.")
         return
     if valid_response(response, expect_json=True):
-        json_repsonse = response.json()
+        json_response = response.json()
         click.secho(
-            "Your order has been sucessfully submitted. The total price is "
+            "Your order has been successfully submitted. The total price is "
             "${}, and your order number is {}".format(
-                json_repsonse["total_price"],
+                json_response["total_price"],
                 order_no))
         # Reset the order variable after submitting the order
         globals["current_order"] = generate_base_order()

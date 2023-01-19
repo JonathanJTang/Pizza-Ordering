@@ -40,5 +40,5 @@ DRINK_TYPE_TO_PRICE = {
     "DIET_PEPSI" : Decimal("2.50"),
     "DR_PEPPER"  : Decimal("3.00"),
     "WATER"      : Decimal("1.00"),
-    "JUICE"      : Decimal("3.01")
+    "JUICE"      : Decimal("3.00")
 }
