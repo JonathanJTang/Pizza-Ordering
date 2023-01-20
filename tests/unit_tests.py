@@ -8,6 +8,7 @@ from cart import Cart
 from csv_parser import CsvParser
 from delivery_method import DeliveryMethod
 from drink import Drink
+from flask import jsonify
 from foodora_delivery import FoodoraDelivery
 from invalid_option_error import InvalidOptionError
 from json_parser import JsonParser
@@ -514,22 +515,15 @@ class TestPizzaParlour(unittest.TestCase):
 
     @patch.dict("PizzaParlour.orders", {}, clear=True)
     @patch("PizzaParlour.next_order_no", 1)
-    def test_get_order(self):
+    def test_create_and_get_order(self):
         self.assertEqual(PizzaParlour.get_order(
             99), ("Not a valid order number", 404))
         response = self.app.post('/api/orders')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, b"1")
         response = self.app.get(f"/api/orders/{int(response.data)}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {'products': []})
-
-    # def test_replace_order(self):
-    #     self.assertEqual(PizzaParlour.replace_order(), "#TODO")
-
-    # def test_get_full_menu(self):
-    #     self.assertEqual(PizzaParlour.get_full_menu(), "TODO")
-
-    # def test_get_menu_item_price(self):
-    #     self.assertEqual(PizzaParlour.get_menu_item_price(), "#TODO")
 
 
 class TestPizzaParlourEditOrder(unittest.TestCase):
@@ -544,9 +538,9 @@ class TestPizzaParlourEditOrder(unittest.TestCase):
             99), ("Not a valid order number", 404))
         response = self.app.post('/api/orders')
         order_no = int(response.data)
-        response = self.app.get(f'/api/orders/{order_no}')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, b'{"products":[]}\n')
+        # response = self.app.get(f'/api/orders/{order_no}')
+        # self.assertEqual(response.status_code, 200)
+        # self.assertEqual(response.data, b'{"products":[]}\n')
         response = self.app.patch(f'/api/orders/{order_no}', json=sample_json)
         self.assertEqual(PizzaParlour.edit_order(order_no),
                          ("An error occurred on the server", 500))
@@ -573,3 +567,36 @@ class TestPizzaParlourCancelOrder(unittest.TestCase):
             response.data,
             b"Successfully deleted order %d" %
             order_no)
+
+
+class TestPizzaParlourMenu(unittest.TestCase):
+    def setUp(self):
+        self.app = app.test_client()
+
+    @patch.dict("options.PIZZA_TYPE_TO_PRICE",
+                {"PEPPERONI": Decimal("6.99")}, clear=True)
+    @patch.dict("options.PIZZA_SIZE_TO_PRICE", {}, clear=True)
+    @patch.dict("options.PIZZA_TOPPING_TO_PRICE", {}, clear=True)
+    @patch.dict("options.DRINK_TYPE_TO_PRICE",
+                {"COKE": Decimal("2.00")}, clear=True)
+    def test_get_full_menu(self):
+        with app.app_context():
+            response_actual = self.app.get('/api/menu')
+            self.assertEqual(
+                response_actual.get_json(), {
+                    "drink types": {
+                        "COKE": 2.0}, "pizza types": {
+                        "PEPPERONI": 6.99}, "pizza sizes": {}, "pizza toppings": {}})
+            self.assertEqual(response_actual.status_code, 200)
+
+    @patch.dict("options.DRINK_TYPE_TO_PRICE",
+                {"COKE": Decimal("2.00")}, clear=True)
+    def test_get_menu_item_price(self):
+        with app.app_context():
+            response_actual = self.app.get('/api/menu/bla')
+            self.assertEqual(response_actual.status_code, 400)
+            self.assertEqual(response_actual.data, b'Not a valid menu item')
+            response_actual = self.app.get('/api/menu/coke')
+            response_correct = jsonify(Decimal("2.00"))
+            self.assertEqual(response_actual.data, response_correct.data)
+            self.assertEqual(response_actual.status_code, 200)
